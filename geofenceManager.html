@@ -1,0 +1,179 @@
+<!--
+  Copyright 2014 IBM Corp.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<script type="text/javascript">
+    RED.nodes.registerType('geofence-manager', {
+        category: 'config',
+        defaults: {
+            geofences: {  }
+        },
+        label: function () {
+            return "geofence manager";
+        },
+        oneditprepare: function () {
+            console.log("in edit prepare of geofenceManager");
+            function setupMap(node) {
+
+                console.log(node.testMap);
+
+                var map = L.map('node-geofence-map').setView([57.696, 11.9788], 9);
+
+                window.node_geofence_map = map;
+                L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 20,
+                    attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors'
+                }).addTo(map);
+
+                var drawnItems = new L.FeatureGroup();
+                map.addLayer(drawnItems);
+
+                var mapElement = document.getElementById("node-geofence-map");
+
+                if(node.geofences == undefined) {
+                    console.log("it's undefined");
+                    node.geofences = new Map();
+                } else if (node.geofences == null) {
+                    node.geofences = new Map();
+                    console.log("it's null");
+                }
+
+                console.log(node.geofences);
+
+                var i = -1;
+                for (var key of node.geofences) {
+                    var fence = key[1];
+
+                    if(fence == null) continue;
+                    i++;
+
+                    var deleteButton = document.createElement('button');
+                    var deleteID = "delete" + i;
+                    deleteButton.id = deleteID;
+                    deleteButton.innerHTML = "delete " + fence.name;
+                    mapElement.parentNode.insertBefore(deleteButton, mapElement.nextSibling);
+
+                    function deleteElem(elemName) {
+                        var elem = document.getElementById(elemName);
+                        elem.parentNode.removeChild(elem);
+                    }
+                    deleteButton.onclick = (function removeIndex(fenceToRemove) {
+                        deleteElem(deleteID);
+
+                        console.log("sending event!");
+                        drawnItems.removeLayer(fenceToRemove.shape);
+
+                        var evt = $.Event('geofenceDeleted');
+                        evt.controller = node;
+                        evt.id = fenceToRemove.id;
+                        evt.shape = fenceToRemove.shape;
+                        evt.recipient = fenceToRemove.nodeID;
+                        console.log("their id: " + evt.recipient);
+                        console.log("shape: ");
+                        console.log(evt.shape);
+                        $(window).trigger(evt);
+
+                    }).bind(node, fence);
+
+                    var leafletShape;
+
+                    if (fence.mode === "circle") {
+                        if (fence.rad != 0) {
+                            leafletShape = L.circle(
+                                [fence.centre.latitude, fence.centre.longitude],
+                                fence.rad,
+                                { color: '#662d91' }
+                            );
+                            leafletShape.addTo(drawnItems);
+                            map.fitBounds(
+                                leafletShape.getBounds(),
+                                { padding: L.point(30, 30) }
+                            );
+                            leafletShape.bindTooltip(fence.name).openTooltip();
+
+                        }
+
+                    } else {
+                        if (fence.points.length >= 3) {
+                            var corners = [];
+                            for (x in fence.points) {
+                                var latlng = L.latLng(fence.points[x].latitude, fence.points[x].longitude);
+                                corners.push(latlng);
+                            }
+                            leafletShape = L.polygon(
+                                corners
+                            );
+                            leafletShape.addTo(drawnItems);
+                            map.fitBounds(
+                                leafletShape.getBounds(),
+                                { padding: L.point(30, 30) }
+                            );
+                            leafletShape.bindTooltip(fence.name).openTooltip();
+                        }
+                    }
+
+                    fence.shape = leafletShape;
+                }
+            }
+
+            var n = this;
+            console.log("loading leaflet");
+            $.getScript('geofence/js/leaflet/leaflet-src.js')
+                .done(function (data, textStatus, jqxhr) {
+                    $.getScript('geofence/js/Leaflet.draw/dist/leaflet.draw.js')
+                        .done(function (data, textStatus, jqxhr) {
+                            $.getScript('geofence/js/L.GeoSearch/src/js/l.control.geosearch.js')
+                                .done(function (data, textStatus, jqxhr) {
+                                    $.getScript('geofence/js/L.GeoSearch/src/js/l.geosearch.provider.openstreetmap.js')
+                                        .done(function (data, textStatus, jqxhr) {
+                                            setupMap(n);
+
+                                        })
+                                        .fail(function (jqxhr, settings, exception) {
+                                            console.log("failed4");
+                                            console.log(exception);
+                                            console.log(exception.stack);
+                                        });
+                                })
+                                .fail(function (jqxhr, settings, exception) {
+                                    console.log("failed3");
+                                    console.log(exception);
+                                    console.log(exception.stack);
+                                });
+                        })
+                        .fail(function (jqxhr, settings, exception) {
+                            console.log("failed2");
+                            console.log(exception);
+                            console.log(exception.stack);
+                        });
+                })
+                .fail(function (jqxhr, settings, exception) {
+                    console.log("failed");
+                    console.log(exception);
+                    console.log(exception.stack);
+                });
+        }
+    });
+
+</script>
+
+<script type="text/x-red" data-template-name="geofence-manager">
+    <div class="form-row">
+        <link rel="stylesheet" href="geofence/js/leaflet/leaflet.css" />
+        <link rel="stylesheet" href="geofence/js/Leaflet.draw/dist/leaflet.draw.css" />
+        <link rel="stylesheet" href="geofence/js/L.GeoSearch/src/css/l.geosearch.css" />
+        <div id="node-geofence-map" style="width: 100%; height: 400px"></div>
+    </div>
+</script>
