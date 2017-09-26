@@ -15,7 +15,7 @@
  **/
 
 module.exports = function (RED) {
-    "use strict";
+    
     var geolib = require('geolib');
     var path = require('path');
 
@@ -24,7 +24,6 @@ module.exports = function (RED) {
         RED.nodes.createNode(this, n);
 
         this.controller = n.controller;
-        this.thisNodesGeofence = n.thisNodesGeofence;
         this.points = n.points;
         this.mode = n.mode;
         this.centre = n.centre;
@@ -34,7 +33,6 @@ module.exports = function (RED) {
         var node = this;
 
         node.on('input', function (msg) {
-
 
             var message = [];
 

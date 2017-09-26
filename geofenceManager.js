@@ -14,13 +14,10 @@
  * limitations under the License.
  **/
 module.exports = function (RED) {
-    "use strict";
+    
     function geofenceManager(n) {
         RED.nodes.createNode(this, n);
 
-        this.geofences = n.geofences;
-        console.log(n.geofences);
-        console.log("that was in js");
     }
     RED.nodes.registerType("geofence-manager", geofenceManager);
 };

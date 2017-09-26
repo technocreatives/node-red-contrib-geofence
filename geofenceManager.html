@@ -15,19 +15,20 @@
 -->
 
 <script type="text/javascript">
+
     RED.nodes.registerType('geofence-manager', {
         category: 'config',
-        defaults: {
-            geofences: {  }
-        },
         label: function () {
             return "geofence manager";
         },
+        defaults: {
+            geofenceMap: { value: [] }
+        },        
         oneditprepare: function () {
             console.log("in edit prepare of geofenceManager");
+
             function setupMap(node) {
 
-                console.log(node.testMap);
 
                 var map = L.map('node-geofence-map').setView([57.696, 11.9788], 9);
 
@@ -42,18 +43,30 @@
 
                 var mapElement = document.getElementById("node-geofence-map");
 
-                if(node.geofences == undefined) {
-                    console.log("it's undefined");
-                    node.geofences = new Map();
-                } else if (node.geofences == null) {
-                    node.geofences = new Map();
-                    console.log("it's null");
-                }
+                // console.log("this: ");
+                // console.log(this);
+                // console.log("node: " );
+                // console.log(node);
 
-                console.log(node.geofences);
+                console.log("geofenceMap in manager html: " );
+                console.log(node.geofenceMap);
+
+                // if(node.geofences == undefined) {
+                //    node.geofences = new Map();
+                //     console.log("node.geofences undefined in manager.html");
+                // } else if (node.geofences == null) {
+                //     node.geofences = new Map();
+                //     console.log("node.geofences null in manager.html");
+                // }
+                // else {
+                //     console.log("map not null in manager.html!");
+                //     console.log(node.geofences);
+                // }
+                
+                //console.log("new map value:");
 
                 var i = -1;
-                for (var key of node.geofences) {
+                for (var key of node.geofenceMap) {
                     var fence = key[1];
 
                     if(fence == null) continue;
@@ -124,8 +137,8 @@
                         }
                     }
 
-                    fence.shape = leafletShape;
-                }
+                   fence.shape = leafletShape;
+               }
             }
 
             var n = this;
