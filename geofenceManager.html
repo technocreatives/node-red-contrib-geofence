@@ -77,13 +77,15 @@
                     deleteButton.id = deleteID;
                     deleteButton.innerHTML = "delete " + fence.name;
                     mapElement.parentNode.insertBefore(deleteButton, mapElement.nextSibling);
+                    fence.deleteID = deleteID;
 
                     function deleteElem(elemName) {
                         var elem = document.getElementById(elemName);
                         elem.parentNode.removeChild(elem);
                     }
                     deleteButton.onclick = (function removeIndex(fenceToRemove) {
-                        deleteElem(deleteID);
+                        console.log(fenceToRemove.deleteID);
+                        deleteElem(fenceToRemove.deleteID);
 
                         console.log("sending event!");
                         drawnItems.removeLayer(fenceToRemove.shape);
@@ -120,14 +122,16 @@
 
                     } else {
                         if (fence.points.length >= 3) {
+
                             var corners = [];
-                            for (x in fence.points) {
-                                var latlng = L.latLng(fence.points[x].latitude, fence.points[x].longitude);
+                            for (var j = 0; j < fence.points.length; j++) {
+                                var latlng = [fence.points[j].latitude, fence.points[j].longitude];
                                 corners.push(latlng);
                             }
                             leafletShape = L.polygon(
                                 corners
                             );
+
                             leafletShape.addTo(drawnItems);
                             map.fitBounds(
                                 leafletShape.getBounds(),

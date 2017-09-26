@@ -18,6 +18,8 @@ module.exports = function (RED) {
     function geofenceManager(n) {
         RED.nodes.createNode(this, n);
 
+        this.geofenceMap = n.geofenceMap;
+
     }
     RED.nodes.registerType("geofence-manager", geofenceManager);
 };

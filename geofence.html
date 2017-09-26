@@ -208,9 +208,6 @@
                 map.on('draw:deleted', function (e) {
                     console.log("deleted", e);
                     drawControl.addTo(map);
-
-
-                    //remove from lists n stuff
                 });
 
                 
@@ -235,10 +232,7 @@
                 if (ourShape == null) {
                     drawControl.addTo(map);
                 }
-
-                // if (controllerNode.geofences.get(node.id.toString()) == null) {
-                //     drawControl.addTo(map);
-                // }
+                
                 var i = -1;
 
                 for (var key of controllerNode.geofenceMap) {
@@ -268,8 +262,8 @@
                     } else {
                         if (fence.points.length >= 3) {
                             var corners = [];
-                            for (x in fence.points) {
-                                var latlng = L.latLng(fence.points[x].latitude, fence.points[x].longitude);
+                            for (var j = 0; j < fence.points.length; j++) {
+                                var latlng = [fence.points[j].latitude, fence.points[j].longitude];
                                 corners.push(latlng);
                             }
                             leafletShape = L.polygon(
@@ -285,10 +279,7 @@
                     }
 
                     var shouldDrawThisShape = true;
-
-                    // var thisNodesShape = controllerNode.geofences.get(node.id.toString());
-
-
+                    
                     if (ourShape == undefined) {
                         shouldDrawThisShape = false;
                     } else if (ourShape == null) {
@@ -305,44 +296,42 @@
 
 
                     if (node.id != e.recipient) {
+                        console.log("not the right receipient id  " + node.id);
                         return;
                     }
 
                     var controllerNode = e.controller;
-                    //var thisNodesShape = controllerNode.geofences.get(node.id.toString());
                     var thisNodesShape = getGeofence(controllerNode.geofenceMap, node.id);
 
                     if (thisNodesShape == undefined) {
+                        console.log("our shape's undefined! " + node.id);
                         return;
                     } else if (thisNodesShape == null) {
+                        console.log("our shape's null! " + node.id);
                         return;
                     }
+                    
+                    console.log("event shape: ");
+                    console.log(e);
 
-                    if (thisNodesShape.id != e.id) {
-                        return;
-                    }
+                    console.log("our shape: ");
+                    console.log(thisNodesShape);
 
-                    // we now know that this shape to be deleted is our shape
-
-
-                    //controllerNode.geofences.set(node.id.toString(), null)
+                    console.log("deleting " + thisNodesShape.name);
+                    
                     setGeofenceData(controllerNode.geofenceMap, node.id, null);
                     thisNodesGeofence = null;
 
                     drawnItems.getLayers().forEach(function (shape) {
-                        if (shape._bounds == thisNodesShape.shape._bounds || shape._radius == thisNodesShape.shape._radius) {
+                        if (shape._bounds == thisNodesShape.shape._bounds && shape._radius == thisNodesShape.shape._radius) {
                             drawnItems.removeLayer(shape);
                         }
                     }, this);
 
-                    if (textBox != undefined) {
-                        textBox.parentNode.removeChild(textBox);
-                    }
-                    if (textLabel != undefined) {
-                        textLabel.parentNode.removeChild(textLabel);
-                    }
-                    n.name = "no geofence assigned."
-                });
+                    node.name = "no geofence assigned."
+                    console.log("deleted from " + node.id);
+                    node.label = "no geofence assigned."
+                }).bind(node);
             }
 
             var n = this;
@@ -424,44 +413,27 @@
                         newFence.rad = 0;
                         newFence.centre = {};
                         for (var j = 0; j < layer._latlngs[0].length; j++) {
-                            newFence.points.push({ latitude: layer._latlngs[0][j].lat, longitude: layer._latlngs[0][j].lng });
+
+                            var nextElem = { latitude: layer._latlngs[0][j].lat, longitude: layer._latlngs[0][j].lng };
+
+                            newFence.points.push(nextElem);
+                            
                         }
                         newFence.id = newFence.points[0].latitude * newFence.points[0].longitude;
                     }
 
-                    newFence.shape = { };
+                    newFence.shape =  {  };
                     newFence.shape._bounds = layer._bounds;
                     newFence.shape._radius = layer._radius;
 
+                    
                     newFence.nodeID = n.id;
 
 
                     setGeofenceData(controllerNode.geofenceMap, n.id, newFence);
-
-                    // if (controllerNode.geofenceMap == null) {
-                    //     console.log("tried to assign to a null fenceArray");
-                    // } else {
-
-                    // var didAssign = false;
-
-                    // for (var i = 0; i < controllerNode.geofenceMap.length; i++) {
-                    //     var element = controllerNode.geofenceMap[i];
-
-                    //     if (element[0] == n.id.toString()) {
-                    //         element[1] = newFence;
-                    //         didAssign = true;
-                    //         break;
-                    //     }
-                    // }
-
-                    // if (didAssign == false) {
-                    //     controllerNode.geofenceMap.push([2, newFence]);
-                    // }
-
-                    //controllerNode.geofences.set(n.id.toString(), newFence);
+                    
                     newFence.name = textBox.value;
                     n.name = textBox.value;
-                    // console.log("adding new shape to list, this node's geofence: " + getGeofence(controllerNode.geofenceMap, n.id));
                     index++;
                 }
 
@@ -469,16 +441,6 @@
             });
 
             if (controllerNode != undefined) {
-                //var fence = controllerNode.geofences.get(n.id.toString());
-
-                // if (fence != undefined) {
-                //     n.points = fence.points;
-                //     n.radius = fence.rad;
-                //     n.centre = fence.centre;
-                //     n.fenceID = fence.id;
-                //     n.geofenceName = fence.name;
-                //     n.mode = fence.mode;
-                // }
 
                 var ourGeofence = getGeofence(controllerNode.geofenceMap, n.id);
 
