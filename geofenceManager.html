@@ -45,7 +45,8 @@
                 console.log("geofenceMap in manager html: ");
                 console.log(node.geofenceMap);
 
-                
+                var shapeList = [];
+
                 for (let i = 0; i < node.geofenceMap.length; i++) {
                     var key = node.geofenceMap[i];
                     var fence = key[1];
@@ -103,13 +104,13 @@
                         let arrayIndex = -1;
                         for (var j = 0; j < node.geofenceMap.length; j++) {
                             let fence = node.geofenceMap[j][1];
-                            if(fence.id == fenceToRemove.id) {
+                            if (fence.id == fenceToRemove.id) {
                                 arrayIndex = j;
                                 break;
                             }
                         }
 
-                        if(arrayIndex != -1) {
+                        if (arrayIndex != -1) {
                             node.geofenceMap.splice(arrayIndex, 1);
                             console.log("deleted element " + arrayIndex);
                             console.log(node.geofenceMap);
@@ -125,14 +126,9 @@
                         if (fence._mRadius != 0) {
                             leafletShape = L.circle(
                                 [fence.centre.latitude, fence.centre.longitude],
-                                fence._mRadius,
-                                { color: '#662d91' }
+                                fence._mRadius
                             );
                             leafletShape.addTo(drawnItems);
-                            map.fitBounds(
-                                leafletShape.getBounds(),
-                                { padding: L.point(30, 30) }
-                            );
                             leafletShape.bindTooltip(fence.name + " ");
 
                         }
@@ -150,14 +146,17 @@
                             );
 
                             leafletShape.addTo(drawnItems);
-                            map.fitBounds(
-                                leafletShape.getBounds(),
-                                { padding: L.point(30, 30) }
-                            );
                             leafletShape.bindTooltip(fence.name);
                         }
                     }
+
+                    leafletShape.setStyle({color: '#ffffff'});
+                    leafletShape.setStyle({fillColor: '#42f4d7'});
+
+                    shapeList.push(leafletShape);
                 }
+
+                map.fitBounds(new L.featureGroup(shapeList).getBounds());
             }
 
             var n = this;

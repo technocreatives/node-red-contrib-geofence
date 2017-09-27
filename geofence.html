@@ -105,11 +105,14 @@
     function areGeofencesTheSame(shape1, shape2) {
 
         if (shape1._mRadius != undefined && shape2._mRadius != undefined) {
-            if (shape1._mRadius == shape2._mRadius) {
-                return true;
+            if(shape1._mRadius > 0 && shape2._mRadius > 0) {
+                if (shape1._mRadius == shape2._mRadius) {
+                    return true;
+                }
             }
         }
-        else if (shape1._bounds != undefined && shape2._bounds != undefined) {
+        
+        if (shape1._bounds != undefined && shape2._bounds != undefined) {
             if (shape1._bounds._northEast.lat == shape2._bounds._northEast.lat &&
                 shape1._bounds._northEast.lng == shape2._bounds._northEast.lng &&
                 shape1._bounds._southWest.lat == shape2._bounds._southWest.lat &&
@@ -187,7 +190,8 @@
                         marker: false,
                         circle: {
                             shapeOptions: {
-                                color: '#662d91'
+                                color: '#ffffff',
+                                fillColor: '#42f4d7'
                             }
                         }
                     },
@@ -216,6 +220,14 @@
                     if (drawnItems.hasLayer(layer) == false) {
                         drawnItems.addLayer(layer);
                     }
+                    
+                    layer.setStyle({color: '#ffffff'});
+                    layer.setStyle({fillColor: '#42f4d7'});
+
+                    map.fitBounds(
+                        layer.getBounds(),
+                        { padding: L.point(30, 30) }
+                    );
 
                     var elementName = 'input'
                     var input = document.createElement('input');
@@ -279,13 +291,18 @@
                     i++;
 
                     var leafletShape;
+                    var isOurShape = false;
+                    if (ourShape != undefined) {
+                        isOurShape = areGeofencesTheSame(fence, ourShape);
+                    }
+
+                    console.log("here in geofence setupmap");
 
                     if (fence.mode === "circle") {
                         if (fence._mRadius != 0) {
                             leafletShape = L.circle(
                                 [fence.centre.latitude, fence.centre.longitude],
-                                fence._mRadius,
-                                { color: '#662d91' }
+                                fence._mRadius
                             );
                         }
 
@@ -302,13 +319,21 @@
                         }
                     }
 
+                    if (isOurShape == true) {
+                        leafletShape.setStyle({color: '#ffffff'});
+                        leafletShape.setStyle({fillColor: '#42f4d7'});
+                    } else {
+                        leafletShape.setStyle({color: '#000000'});
+                        leafletShape.setStyle({fillColor: '#7f8082'});
+                    }
+
                     shapeList.push(leafletShape);
                     leafletShape.addTo(drawnItems);
                     leafletShape.bindTooltip(fence.name);
 
-                    if(ourShape != null) {
-                        if (areGeofencesTheSame(fence, ourShape)) {
-    
+                    if (ourShape != null) {
+                        if (isOurShape) {
+
                             map.fitBounds(
                                 leafletShape.getBounds(),
                                 { padding: L.point(30, 30) }
@@ -353,8 +378,8 @@
 
 
                 }).bind(node);
-                
-                if(ourShape == null) {
+
+                if (ourShape == null) {
                     map.fitBounds(new L.featureGroup(shapeList).getBounds());
                 }
             }
