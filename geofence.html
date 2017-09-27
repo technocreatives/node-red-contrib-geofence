@@ -102,6 +102,24 @@
         }
     }
 
+    function areGeofencesTheSame(shape1, shape2) {
+
+        if (shape1._mRadius != undefined && shape2._mRadius != undefined) {
+            if (shape1._mRadius == shape2._mRadius) {
+                return true;
+            }
+        }
+        else if (shape1._bounds != undefined && shape2._bounds != undefined) {
+            if (shape1._bounds._northEast.lat == shape2._bounds._northEast.lat &&
+                shape1._bounds._northEast.lng == shape2._bounds._northEast.lng &&
+                shape1._bounds._southWest.lat == shape2._bounds._southWest.lat &&
+                shape1._bounds._southWest.lng == shape2._bounds._southWest.lng) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     RED.nodes.registerType('geofence', {
         category: 'input',
@@ -123,18 +141,18 @@
 
             let controllerNode = undefined;
             RED.nodes.eachConfig(e => {
-                    if (e.id == this.controller) {
-                        controllerNode = e;
-                    }
-                });
-
-                if (controllerNode == undefined) {
-                    return "no geofence assigned";
+                if (e.id == this.controller) {
+                    controllerNode = e;
                 }
+            });
+
+            if (controllerNode == undefined) {
+                return "no geofence assigned";
+            }
 
             let ourGeofence = getGeofence(controllerNode.geofenceMap, this.id);
 
-            if(ourGeofence == null) {
+            if (ourGeofence == null) {
                 return "no geofence assigned";
             }
             else {
@@ -252,6 +270,7 @@
                 }
 
                 var i = -1;
+                var shapeList = [];
 
                 for (var key of controllerNode.geofenceMap) {
                     var fence = key[1];
@@ -268,13 +287,6 @@
                                 fence._mRadius,
                                 { color: '#662d91' }
                             );
-                            leafletShape.addTo(drawnItems);
-                            map.fitBounds(
-                                leafletShape.getBounds(),
-                                { padding: L.point(30, 30) }
-                            );
-                            leafletShape.bindTooltip(fence.name).openTooltip();
-
                         }
 
                     } else {
@@ -287,12 +299,20 @@
                             leafletShape = L.polygon(
                                 corners
                             );
-                            leafletShape.addTo(drawnItems);
+                        }
+                    }
+
+                    shapeList.push(leafletShape);
+                    leafletShape.addTo(drawnItems);
+                    leafletShape.bindTooltip(fence.name);
+
+                    if(ourShape != null) {
+                        if (areGeofencesTheSame(fence, ourShape)) {
+    
                             map.fitBounds(
                                 leafletShape.getBounds(),
                                 { padding: L.point(30, 30) }
                             );
-                            leafletShape.bindTooltip(fence.name).openTooltip();
                         }
                     }
 
@@ -312,46 +332,31 @@
 
                 $(window).on('geofenceDeleted', function (e) {
 
-                    function areShapesTheSame(shape1, shape2) {
-
-                        if (shape1._mRadius != undefined && shape2._mRadius != undefined) {
-                            if (shape1._mRadius == shape2._mRadius) {
-                                return true;
-                            }
-                        }
-                        else if (shape1._bounds != undefined && shape2._bounds != undefined) {
-                            if (shape1._bounds._northEast.lat == shape2._bounds._northEast.lat &&
-                                shape1._bounds._northEast.lng == shape2._bounds._northEast.lng &&
-                                shape1._bounds._southWest.lat == shape2._bounds._southWest.lat &&
-                                shape1._bounds._southWest.lng == shape2._bounds._southWest.lng) {
-                                return true;
-                            }
-                        }
-
-                        return false;
-                    }
-
                     var controllerNode = e.controller;
                     var thisNodesShape = getGeofence(controllerNode.geofenceMap, node.id);
 
                     drawnItems.getLayers().forEach(function (shape) {
 
-                        if (areShapesTheSame(shape, e.shape)) {
+                        if (areGeofencesTheSame(shape, e.shape)) {
                             drawnItems.removeLayer(shape);
                         }
                     }, this);
 
-                    if(thisNodesShape == null) {
+                    if (thisNodesShape == null) {
                         return;
                     }
 
-                    if(areShapesTheSame(e.shape, thisNodesShape)) {
+                    if (areGeofencesTheSame(e.shape, thisNodesShape)) {
                         node.name = "no geofence assigned.";
                         node.label = "no geofence assigned.";
                     }
 
 
                 }).bind(node);
+                
+                if(ourShape == null) {
+                    map.fitBounds(new L.featureGroup(shapeList).getBounds());
+                }
             }
 
             var n = this;
