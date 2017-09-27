@@ -81,7 +81,7 @@ RED.nodes.registerType('geofence', {
     category: 'input',
     color: "#DEBD5C",
     defaults: {
-        name: { value: "no geofence assigned." },
+        name: { value: "No geofence assigned." },
         manager: { type: "geofence-manager", required: true },
         centre: { value: null },
         radius: { value: null },
@@ -94,22 +94,7 @@ RED.nodes.registerType('geofence', {
     outputs: 1,
     icon: "white-globe.png",
     label: function () {
-
-        var node = RED.nodes.node(this.id);
-        var nodeManager = RED.nodes.node(node.manager);
-
-        if (nodeManager == undefined) {
-            return "no geofence assigned";
-        }
-
-        let ourGeofence = getGeofence(nodeManager.geofenceMap, this.id);
-
-        if (ourGeofence == null) {
-            return "no geofence assigned";
-        }
-        else {
-            return ourGeofence.name;
-        }
+        return this.name || "";
     },
     labelStyle: function () {
         return this.name ? "node_label_italic" : "";
@@ -217,7 +202,7 @@ RED.nodes.registerType('geofence', {
             var doesOurGeofenceExist = false;
             var ourShape = getGeofence(nodeManager.geofenceMap, node.id);
 
-            if (ourShape == null && shapeList.length > 0) {
+            if (ourShape == null) {
                 drawControl.addTo(map);
             }
 
@@ -318,7 +303,7 @@ RED.nodes.registerType('geofence', {
 
             }).bind(node);
 
-            if (ourShape == null) {
+            if (ourShape == null && shapeList.length > 0) {
                 map.fitBounds(new L.featureGroup(shapeList).getBounds());
             }
         }
