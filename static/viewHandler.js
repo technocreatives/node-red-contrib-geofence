@@ -95,18 +95,13 @@ RED.nodes.registerType('geofence', {
     icon: "white-globe.png",
     label: function () {
 
-        let controllerNode = undefined;
-        RED.nodes.eachConfig(e => {
-            if (e.id == this.controller) {
-                controllerNode = e;
-            }
-        });
+        var controllerNode = RED.nodes.node(this.controller);
 
         if (controllerNode == undefined) {
             return "no geofence assigned";
         }
 
-        let ourGeofence = getGeofence(controllerNode.geofenceMap, this.id);
+        var ourGeofence = getGeofence(controllerNode.geofenceMap, this.id);
 
         if (ourGeofence == null) {
             return "no geofence assigned";
@@ -230,7 +225,7 @@ RED.nodes.registerType('geofence', {
             var doesOurGeofenceExist = false;
             var ourShape = getGeofence(controllerNode.geofenceMap, node.id);
 
-            if (ourShape == null) {
+            if (ourShape == null && shapeList.length > 0) {
                 drawControl.addTo(map);
             }
 
@@ -299,7 +294,7 @@ RED.nodes.registerType('geofence', {
                 if (ourShape == undefined) {
                     shouldDrawThisShape = false;
                 } else if (ourShape == null) {
-                    shouldDrawThisShape = false
+                    shouldDrawThisShape = false;
                 } else if (ourShape.shape._bounds != fence.shape._bounds || ourShape.shape._radius != fence.shape._radius) {
                     shouldDrawThisShape = false;
                 }
@@ -404,7 +399,7 @@ RED.nodes.registerType('geofence', {
                     newFence.centre = { latitude: layer._latlng.lat, longitude: layer._latlng.lng };
                     newFence._mRadius = layer._mRadius;
                     newFence.points = [];
-                    newFence.id = newFence.centre.latitude * newFence.centre.longitude;
+                    newFence.id = parseInt((newFence.centre.latitude * newFence.centre.longitude) * 1000);
                 } else {
                     newFence.mode = "polyline";
                     newFence.points = [];
@@ -416,15 +411,22 @@ RED.nodes.registerType('geofence', {
 
                         newFence.points.push(nextElem);
                     }
-
-                    newFence.id = newFence.points[0].latitude * newFence.points[0].longitude;
+                    
+                    newFence.id = parseInt((newFence.points[0].latitude * newFence.points[0].longitude) * 1000);
+                    
                 }
 
                 newFence.shape = {};
                 newFence.shape._bounds = layer._bounds;
                 newFence._bounds = layer._bounds;
-                newFence.shape._radius = layer._radius;
-                newFence.name = textBox.value;
+                newFence.shape._radius = layer._radius;                    
+                
+                if(textBox.value != "") {
+                    newFence.name = textBox.value;
+                }
+                else {
+                    newFence.name = "unnamed geofence";
+                }
 
                 setGeofenceData(controllerNode.geofenceMap, n.id, newFence);
 
@@ -456,6 +458,6 @@ RED.nodes.registerType('geofence', {
             window.node_geofence_map.invalidateSize(true);
         }
     },
-},
+}
 );
 
