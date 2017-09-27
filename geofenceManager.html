@@ -155,8 +155,9 @@
 
                     shapeList.push(leafletShape);
                 }
-
-                map.fitBounds(new L.featureGroup(shapeList).getBounds());
+                if(shapeList.length > 0) {
+                    map.fitBounds(new L.featureGroup(shapeList).getBounds());
+                }
             }
 
             var n = this;
