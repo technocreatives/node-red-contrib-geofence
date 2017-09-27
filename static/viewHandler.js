@@ -1,6 +1,4 @@
-var textBox;
 var configButton;
-var textLabel;
 var drawnItems;
 var drawControl;
 var map;
@@ -155,21 +153,6 @@ RED.nodes.registerType('geofence', {
                     { padding: L.point(30, 30) }
                 );
 
-                var elementName = 'input'
-                var input = document.createElement('input');
-                input.id = elementName;
-                input.type = "text";
-                input.placeholder = "shape name";
-                lastTextBox.parentNode.insertBefore(input, lastTextBox.nextSibling);
-
-                var newBoxLabel = document.createElement('label');
-                newBoxLabel.innerHTML = "shape name";
-                newBoxLabel.setAttribute("for", input);
-                newBoxLabel.id = 'labelID';
-                textLabel = newBoxLabel;
-                input.parentNode.insertBefore(newBoxLabel, input);
-                textBox = input;
-
                 drawControl.remove(map);
             });
 
@@ -296,8 +279,7 @@ RED.nodes.registerType('geofence', {
                 }
 
                 if (areGeofencesTheSame(e.shape, thisNodesShape)) {
-                    node.name = "no geofence assigned.";
-                    node.label = "no geofence assigned.";
+                    node.name = "No geofence assigned.";
                 }
 
 
@@ -396,17 +378,11 @@ RED.nodes.registerType('geofence', {
                 newFence.shape._bounds = layer._bounds;
                 newFence._bounds = layer._bounds;
                 newFence.shape._radius = layer._radius;                    
-                
-                if(textBox.value != "") {
-                    newFence.name = textBox.value;
-                }
-                else {
-                    newFence.name = "unnamed geofence";
-                }
+
+                newFence.name = this.name ;
 
                 setGeofenceData(nodeManager.geofenceMap, n.id, newFence);
 
-                n.name = textBox.value;
             }
 
 
