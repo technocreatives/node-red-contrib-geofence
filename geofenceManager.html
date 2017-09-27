@@ -96,7 +96,7 @@
 
 
                         var evt = $.Event('geofenceDeleted');
-                        evt.controller = node;
+                        evt.manager = node;
                         evt.id = fenceToRemove.id;
                         evt.shape = fenceToRemove;
                         $(window).trigger(evt);

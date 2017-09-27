@@ -23,7 +23,7 @@ module.exports = function (RED) {
     function geofenceNode(n) {
         RED.nodes.createNode(this, n);
 
-        this.controller = n.controller;
+        this.manager = n.manager;
         this.points = n.points;
         this.mode = n.mode;
         this.centre = n.centre;

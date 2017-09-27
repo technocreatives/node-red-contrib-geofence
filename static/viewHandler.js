@@ -82,7 +82,7 @@ RED.nodes.registerType('geofence', {
     color: "#DEBD5C",
     defaults: {
         name: { value: "no geofence assigned." },
-        controller: { type: "geofence-manager", required: true },
+        manager: { type: "geofence-manager", required: true },
         centre: { value: null },
         radius: { value: null },
         points: { value: [] },
@@ -95,18 +95,14 @@ RED.nodes.registerType('geofence', {
     icon: "white-globe.png",
     label: function () {
 
-        let controllerNode = undefined;
-        RED.nodes.eachConfig(e => {
-            if (e.id == this.controller) {
-                controllerNode = e;
-            }
-        });
+        var node = RED.nodes.node(this.id);
+        var nodeManager = RED.nodes.node(node.manager);
 
-        if (controllerNode == undefined) {
+        if (nodeManager == undefined) {
             return "no geofence assigned";
         }
 
-        let ourGeofence = getGeofence(controllerNode.geofenceMap, this.id);
+        let ourGeofence = getGeofence(nodeManager.geofenceMap, this.id);
 
         if (ourGeofence == null) {
             return "no geofence assigned";
@@ -119,12 +115,12 @@ RED.nodes.registerType('geofence', {
         return this.name ? "node_label_italic" : "";
     },
     oneditprepare: function () {
-
-
-        configButton = document.getElementById("node-input-lookup-controller").parentNode.parentNode;
-
+        var node = RED.nodes.node(this.id);
+        var nodeManager = RED.nodes.node(node.manager);
+        console.log(node.manager)
+        console.log("Manager: " + nodeManager)
+        
         function setupMap(node) {
-            configButton.style.visibility = "initial";
             map = L.map('node-geofence-map').setView([57.696, 11.9788], 9);
 
             window.node_geofence_map = map;
@@ -151,15 +147,7 @@ RED.nodes.registerType('geofence', {
                 edit: false
             });
 
-            var controllerNode = undefined;
-
-            RED.nodes.eachConfig(e => {
-                if (e.id == node.controller) {
-                    controllerNode = e;
-                }
-            });
-
-            if (controllerNode == undefined) {
+            if (nodeManager == undefined) {
                 console.log("can't find config node!");
                 return;
             }
@@ -198,7 +186,6 @@ RED.nodes.registerType('geofence', {
                 textBox = input;
 
                 drawControl.remove(map);
-                configButton.style.visibility = "hidden";
             });
 
             map.on('draw:edited', function (e) {
@@ -228,7 +215,7 @@ RED.nodes.registerType('geofence', {
 
 
             var doesOurGeofenceExist = false;
-            var ourShape = getGeofence(controllerNode.geofenceMap, node.id);
+            var ourShape = getGeofence(nodeManager.geofenceMap, node.id);
 
             if (ourShape == null) {
                 drawControl.addTo(map);
@@ -237,7 +224,7 @@ RED.nodes.registerType('geofence', {
             var i = -1;
             var shapeList = [];
 
-            for (var key of controllerNode.geofenceMap) {
+            for (var key of nodeManager.geofenceMap) {
                 var fence = key[1];
 
                 if (fence == null) continue;
@@ -310,8 +297,7 @@ RED.nodes.registerType('geofence', {
 
             $(window).on('geofenceDeleted', function (e) {
 
-                var controllerNode = e.controller;
-                var thisNodesShape = getGeofence(controllerNode.geofenceMap, node.id);
+                var thisNodesShape = getGeofence(nodeManager.geofenceMap, node.id);
 
                 drawnItems.getLayers().forEach(function (shape) {
 
@@ -378,15 +364,15 @@ RED.nodes.registerType('geofence', {
 
         var map = window.node_geofence_map;
         var n = this;
-        var controllerNode = undefined;
 
-        RED.nodes.eachConfig(e => {
-            if (e.id == n.controller) {
-                controllerNode = e;
-            }
-        });
+        console.log("this");
+        console.log(this);
+        var node = RED.nodes.node(this.id);
+        console.log(node);
+        console.log(nodeManager);
+        var nodeManager = RED.nodes.node(node.manager);
 
-        if (controllerNode == undefined) {
+        if (nodeManager == undefined) {
             console.log("can't find config node!");
             return;
         }
@@ -426,7 +412,7 @@ RED.nodes.registerType('geofence', {
                 newFence.shape._radius = layer._radius;
                 newFence.name = textBox.value;
 
-                setGeofenceData(controllerNode.geofenceMap, n.id, newFence);
+                setGeofenceData(nodeManager.geofenceMap, n.id, newFence);
 
                 n.name = textBox.value;
             }
@@ -434,9 +420,9 @@ RED.nodes.registerType('geofence', {
 
         });
 
-        if (controllerNode != undefined) {
+        if (nodeManager != undefined) {
 
-            var ourGeofence = getGeofence(controllerNode.geofenceMap, n.id);
+            var ourGeofence = getGeofence(nodeManager.geofenceMap, n.id);
 
             if (ourGeofence != null) {
                 n.points = ourGeofence.points;
