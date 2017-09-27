@@ -15,7 +15,6 @@
 -->
 
 <script type="text/javascript">
-
     RED.nodes.registerType('geofence-manager', {
         category: 'config',
         label: function () {
@@ -23,7 +22,7 @@
         },
         defaults: {
             geofenceMap: { value: [] }
-        },        
+        },
         oneditprepare: function () {
             console.log("in edit prepare of geofenceManager");
 
@@ -43,34 +42,15 @@
 
                 var mapElement = document.getElementById("node-geofence-map");
 
-                // console.log("this: ");
-                // console.log(this);
-                // console.log("node: " );
-                // console.log(node);
-
-                console.log("geofenceMap in manager html: " );
+                console.log("geofenceMap in manager html: ");
                 console.log(node.geofenceMap);
 
-                // if(node.geofences == undefined) {
-                //    node.geofences = new Map();
-                //     console.log("node.geofences undefined in manager.html");
-                // } else if (node.geofences == null) {
-                //     node.geofences = new Map();
-                //     console.log("node.geofences null in manager.html");
-                // }
-                // else {
-                //     console.log("map not null in manager.html!");
-                //     console.log(node.geofences);
-                // }
                 
-                //console.log("new map value:");
-
-                var i = -1;
-                for (var key of node.geofenceMap) {
+                for (let i = 0; i < node.geofenceMap.length; i++) {
+                    var key = node.geofenceMap[i];
                     var fence = key[1];
 
-                    if(fence == null) continue;
-                    i++;
+                    if (fence == null) continue;
 
                     var deleteButton = document.createElement('button');
                     var deleteID = "delete" + i;
@@ -84,31 +64,68 @@
                         elem.parentNode.removeChild(elem);
                     }
                     deleteButton.onclick = (function removeIndex(fenceToRemove) {
-                        console.log(fenceToRemove.deleteID);
                         deleteElem(fenceToRemove.deleteID);
 
                         console.log("sending event!");
-                        drawnItems.removeLayer(fenceToRemove.shape);
+                        drawnItems.getLayers().forEach(function (shape) {
+
+                            if (fenceToRemove.mode == "circle") {
+
+                                if (shape._mRadius != undefined) {
+
+                                    if (shape._mRadius == fenceToRemove._mRadius) {
+                                        drawnItems.removeLayer(shape);
+                                    }
+                                }
+
+                            }
+                            else {
+                                if (shape._bounds != undefined) {
+
+                                    if (shape._bounds._northEast.lat == fenceToRemove.shape._bounds._northEast.lat &&
+                                        shape._bounds._northEast.lng == fenceToRemove.shape._bounds._northEast.lng &&
+                                        shape._bounds._southWest.lat == fenceToRemove.shape._bounds._southWest.lat &&
+                                        shape._bounds._southWest.lng == fenceToRemove.shape._bounds._southWest.lng) {
+                                        drawnItems.removeLayer(shape);
+                                    }
+                                }
+
+                            }
+                        }, this);
+
 
                         var evt = $.Event('geofenceDeleted');
                         evt.controller = node;
                         evt.id = fenceToRemove.id;
-                        evt.shape = fenceToRemove.shape;
-                        evt.recipient = fenceToRemove.nodeID;
-                        console.log("their id: " + evt.recipient);
-                        console.log("shape: ");
-                        console.log(evt.shape);
+                        evt.shape = fenceToRemove;
                         $(window).trigger(evt);
+
+                        let arrayIndex = -1;
+                        for (var j = 0; j < node.geofenceMap.length; j++) {
+                            let fence = node.geofenceMap[j][1];
+                            if(fence.id == fenceToRemove.id) {
+                                arrayIndex = j;
+                                break;
+                            }
+                        }
+
+                        if(arrayIndex != -1) {
+                            node.geofenceMap.splice(arrayIndex, 1);
+                            console.log("deleted element " + arrayIndex);
+                            console.log(node.geofenceMap);
+                        } else {
+                            console.log("we failed to delete anything.");
+                        }
 
                     }).bind(node, fence);
 
                     var leafletShape;
 
                     if (fence.mode === "circle") {
-                        if (fence.rad != 0) {
+                        if (fence._mRadius != 0) {
                             leafletShape = L.circle(
                                 [fence.centre.latitude, fence.centre.longitude],
-                                fence.rad,
+                                fence._mRadius,
                                 { color: '#662d91' }
                             );
                             leafletShape.addTo(drawnItems);
@@ -116,7 +133,7 @@
                                 leafletShape.getBounds(),
                                 { padding: L.point(30, 30) }
                             );
-                            leafletShape.bindTooltip(fence.name).openTooltip();
+                            leafletShape.bindTooltip(fence.name + " ").openTooltip();
 
                         }
 
@@ -140,9 +157,7 @@
                             leafletShape.bindTooltip(fence.name).openTooltip();
                         }
                     }
-
-                   fence.shape = leafletShape;
-               }
+                }
             }
 
             var n = this;
