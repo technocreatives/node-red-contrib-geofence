@@ -15,7 +15,7 @@
  **/
 
 module.exports = function (RED) {
-    
+
     var geolib = require('geolib');
     var path = require('path');
 
@@ -57,10 +57,29 @@ module.exports = function (RED) {
 
             if (loc) {
                 var isInShape = false;
-                if (node.mode === 'circle') {
-                    isInShape = geolib.isPointInCircle(loc, node.centre, Math.round(node.radius));
+
+                var managerID = RED.nodes.node(node.id).manager;
+                var manager = RED.nodes.node(managerID);
+
+                var fence = manager.geofences[node.id];
+
+
+                if (fence._radius) {
+
+                    var centre = { latitude: fence._latlng.lat, longitude: fence._latlng.lng };
+
+                    isInShape = geolib.isPointInCircle(loc, centre, Math.round(fence._mRadius));
                 } else {
-                    isInShape = geolib.isPointInside(loc, node.points);
+
+                    var points = [];
+                    for (var j = 0; j < fence._latlngs[0].length; j++) {
+
+                        var nextElem = { latitude: fence._latlngs[0][j].lat, longitude: fence._latlngs[0][j].lng };
+
+                        points.push(nextElem);
+                    }
+
+                    isInShape = geolib.isPointInside(loc, points);
                 }
 
                 var fenceData = {};
@@ -68,7 +87,7 @@ module.exports = function (RED) {
                 fenceData.name = node.geofenceName;
 
                 if (isInShape) {
-                    fenceData.in = true;    
+                    fenceData.in = true;
                 } else {
                     fenceData.in = false;
                 }

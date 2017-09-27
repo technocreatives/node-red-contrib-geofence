@@ -1,13 +1,15 @@
 RED.nodes.registerType('geofence-manager', {
     category: 'config',
+    defaults: {
+        geofences: { value: {} }
+    },
     label: function () {
         return "geofence manager";
     },
-    defaults: {
-        geofenceMap: { value: [] }
-    },
     oneditprepare: function () {
         console.log("in edit prepare of geofenceManager");
+
+        var node = this;
 
         function setupMap(node) {
 
@@ -25,7 +27,6 @@ RED.nodes.registerType('geofence-manager', {
             createOtherGeofenceLayers(node, map, drawnItems);
         }
 
-        var n = this;
         console.log("loading leaflet");
         $.getScript('geofence/js/leaflet/leaflet-src.js')
             .done(function (data, textStatus, jqxhr) {
@@ -35,7 +36,7 @@ RED.nodes.registerType('geofence-manager', {
                             .done(function (data, textStatus, jqxhr) {
                                 $.getScript('geofence/js/L.GeoSearch/src/js/l.geosearch.provider.openstreetmap.js')
                                     .done(function (data, textStatus, jqxhr) {
-                                        setupMap(n);
+                                        setupMap(node);
 
                                     })
                                     .fail(function (jqxhr, settings, exception) {
@@ -65,16 +66,13 @@ RED.nodes.registerType('geofence-manager', {
 });
 
 function createOtherGeofenceLayers(node, map, drawnItems) {
-    
+
     var mapElement = document.getElementById("node-geofence-map");
 
     var shapeList = [];
 
-    for (let i = 0; i < node.geofenceMap.length; i++) {
-        var key = node.geofenceMap[i];
-        var fence = key[1];
-
-        if (fence == null) continue;
+    Object.keys(node.geofences).map(function (key, index) {
+        var fence = node.geofences[key];
 
         var deleteButton = document.createElement('button');
         var deleteID = "delete" + i;
@@ -84,7 +82,7 @@ function createOtherGeofenceLayers(node, map, drawnItems) {
         fence.deleteID = deleteID;
 
         deleteButton.onclick = function () {
-            deleteGeofence(node, fence, drawnItems);
+            deleteGeofence(node, key, fence, drawnItems);
         }.bind(node, fence);
 
         var leafletShape;
@@ -97,7 +95,6 @@ function createOtherGeofenceLayers(node, map, drawnItems) {
                 );
                 leafletShape.addTo(drawnItems);
                 leafletShape.bindTooltip(fence.name + " ");
-
             }
 
         } else {
@@ -121,64 +118,27 @@ function createOtherGeofenceLayers(node, map, drawnItems) {
         leafletShape.setStyle({ fillColor: '#42f4d7' });
 
         shapeList.push(leafletShape);
-    }
+    });
+
+
     if (shapeList.length > 0) {
         map.fitBounds(new L.featureGroup(shapeList).getBounds());
     }
 }
 
 
-function deleteGeofence(node, fenceToRemove, drawnItems) {
-    
+function deleteGeofence(node, nodeID, fenceToRemove, drawnItems) {
+
     deleteElem(fenceToRemove.deleteID);
 
-    drawnItems.getLayers().forEach(function (shape) {
-
-        if (fenceToRemove.mode == "circle") {
-
-            if (shape._mRadius != undefined) {
-
-                if (shape._mRadius == fenceToRemove._mRadius) {
-                    drawnItems.removeLayer(shape);
-                }
-            }
-        }
-        else {
-            if (shape._bounds != undefined) {
-
-                if (shape._bounds._northEast.lat == fenceToRemove.shape._bounds._northEast.lat &&
-                    shape._bounds._northEast.lng == fenceToRemove.shape._bounds._northEast.lng &&
-                    shape._bounds._southWest.lat == fenceToRemove.shape._bounds._southWest.lat &&
-                    shape._bounds._southWest.lng == fenceToRemove.shape._bounds._southWest.lng) {
-                    drawnItems.removeLayer(shape);
-                }
-            }
-        }
-    }, this);
+   drawnItems.removeLayer(fenceToRemove);
 
 
     var evt = $.Event('geofenceDeleted');
     evt.manager = node;
-    evt.id = fenceToRemove.id;
-    evt.shape = fenceToRemove;
+    evt.nodeID = nodeID;
     $(window).trigger(evt);
 
-    let arrayIndex = -1;
-    for (var j = 0; j < node.geofenceMap.length; j++) {
-        let fence = node.geofenceMap[j][1];
-        if (fence.id == fenceToRemove.id) {
-            arrayIndex = j;
-            break;
-        }
-    }
-
-    if (arrayIndex != -1) {
-        node.geofenceMap.splice(arrayIndex, 1);
-        console.log("deleted element " + arrayIndex);
-        console.log(node.geofenceMap);
-    } else {
-        console.log("we failed to delete anything from the map.");
-    }
 
 }
 
