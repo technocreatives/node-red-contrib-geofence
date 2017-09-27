@@ -379,7 +379,7 @@ RED.nodes.registerType('geofence', {
                 newFence._bounds = layer._bounds;
                 newFence.shape._radius = layer._radius;                    
 
-                newFence.name = this.name ;
+                newFence.name = this.name;
 
                 setGeofenceData(nodeManager.geofenceMap, n.id, newFence);
 
