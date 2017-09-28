@@ -143,6 +143,7 @@ RED.nodes.registerType('geofence', {
                 if (myFence == true) {
                     fence.setStyle({color: '#ffffff'});
                     fence.setStyle({fillColor: '#42f4d7'});
+                    drawControl.remove(map);
                 } else {
                     fence.setStyle({color: '#000000'});
                     fence.setStyle({fillColor: '#7f8082'});
