@@ -2,7 +2,8 @@ var configButton;
 var drawnItems;
 var drawControl;
 var map;
-
+var node;
+var initialNodeManagerID;
 
 RED.nodes.registerType('geofence', {
     category: 'input',
@@ -27,12 +28,9 @@ RED.nodes.registerType('geofence', {
         return this.name ? "node_label_italic" : "";
     },
     oneditprepare: function () {
-        var node = RED.nodes.node(this.id);
-        var nodeManager = RED.nodes.node(node.manager);
-        console.log(node.manager)
-        console.log("Manager: " + nodeManager)
+        node = this;
         
-        function setupMap(node) {
+        function initializeMap(node) {
             map = L.map('node-geofence-map').setView([57.696, 11.9788], 9);
 
             window.node_geofence_map = map;
@@ -41,10 +39,17 @@ RED.nodes.registerType('geofence', {
                 attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors'
             }).addTo(map);
 
+
+            new L.Control.GeoSearch({
+                provider: new L.GeoSearch.Provider.OpenStreetMap(),
+                position: 'bottomleft',
+                showMarker: false,
+                zoomLevel: 12
+            }).addTo(map);
+
             drawnItems = new L.FeatureGroup();
-
             map.addLayer(drawnItems);
-
+            
             drawControl = new L.Control.Draw({
                 draw: {
                     position: 'topleft',
@@ -56,13 +61,13 @@ RED.nodes.registerType('geofence', {
             });
             map.addControl(drawControl);
 
-
-            if (nodeManager == undefined) {
-                console.log("can't find config node!");
-                return;
-            }
-
-            var lastTextBox = document.getElementById("node-geofence-map");
+            var editControl = new L.Control.Draw({
+                draw: false,
+                edit: {
+                    featureGroup: drawnItems
+                }
+            });
+            map.addControl(editControl);
 
             map.on(L.Draw.Event.CREATED, function (e) {
                 var fence = e.layer;
@@ -70,7 +75,6 @@ RED.nodes.registerType('geofence', {
                 if (drawnItems.hasLayer(fence) == false) {
                     drawnItems.addLayer(fence);
                 }
-                
 
                 fence.setStyle({color: '#ffffff'});
                 fence.setStyle({fillColor: '#42f4d7'});
@@ -80,7 +84,7 @@ RED.nodes.registerType('geofence', {
                     { padding: L.point(30, 30) }
                 );
 
-                drawControl.remove(map);
+                drawControl.remove();
             });
 
             map.on('draw:edited', function (e) {
@@ -95,39 +99,33 @@ RED.nodes.registerType('geofence', {
             });
 
             map.on('draw:deleted', function (e) {
-                console.log("deleted", e);
                 drawControl.addTo(map);
             });
 
+            $("#node-input-manager").change(function(val, pal){
+                console.log("SETTING UP NODEMANAGER")
+                var nodeManagerId = $("#node-input-manager option:selected").val();
+                nodeManager = RED.nodes.node(nodeManagerId);
+                if(nodeManagerId != "_ADD_"){
+                    changeNodeManager(nodeManager);
+                }
+            });
 
-            new L.Control.GeoSearch({
-                provider: new L.GeoSearch.Provider.OpenStreetMap(),
-                position: 'bottomleft',
-                showMarker: false,
-                zoomLevel: 12
-            }).addTo(map);
-
-
-
-            var doesOurGeofenceExist = false;
-            var ourShape;
-            if(nodeManager.geofences[node.id]) {
-                ourShape = L.geoJSON(nodeManager.geofences[node.id]);
-                map.fitBounds(
-                    ourShape.getBounds(),
-                    { padding: L.point(30, 30) }
-                );
+            initialNodeManagerID = $("#node-input-manager option:selected").val();
+            var nodeManager = RED.nodes.node(initialNodeManagerID);
+            if(nodeManager != null){
+                changeNodeManager(nodeManager);
             }
-            else {
-                drawControl.addTo(map);
-            }
-            console.log("this is our shape");
-            console.log(nodeManager.geofences[node.id]);
+        }
 
+        function changeNodeManager(nodeM){
+            
+            drawnItems.clearLayers();
+            nodeManager = nodeM;
+            console.log("SETTING UP NODEMANAGER")
+            console.log(this);
 
             var shapeList = [];
-
-            console.log(node);
 
             Object.keys(nodeManager.geofences).map(function (nodeID, index) {
                 var fence = L.GeoJSON.geometryToLayer(nodeManager.geofences[nodeID]);
@@ -143,7 +141,6 @@ RED.nodes.registerType('geofence', {
                 if (myFence == true) {
                     fence.setStyle({color: '#ffffff'});
                     fence.setStyle({fillColor: '#42f4d7'});
-                    drawControl.remove(map);
                 } else {
                     fence.setStyle({color: '#000000'});
                     fence.setStyle({fillColor: '#7f8082'});
@@ -155,36 +152,25 @@ RED.nodes.registerType('geofence', {
                 var fenceName = RED.nodes.node(nodeID).name;
                 fence.bindTooltip(fenceName);
             });
-
-            var editControl = new L.Control.Draw({
-                draw: false,
-                edit: {
-                    featureGroup: drawnItems
-                }
-            });
-
-            
-            map.addControl(editControl);
             map.invalidateSize(true);
 
-
-            $(window).on('geofenceDeleted', function (e) {
-                
-                drawnItems.removeLayer(L.geoJSON(nodeManager.geofences[e.nodeID]));
-                
-                if (node.id == e.nodeID) {
-                    node.name = "No geofence assigned.";
-                    delete nodeManager.geofences[e.nodeID]; 
+            var ourShape;
+            if(nodeManager.geofences[node.id]) {
+                drawControl.remove();
+                ourShape = L.geoJSON(nodeManager.geofences[node.id]);
+                map.fitBounds(
+                    ourShape.getBounds(),
+                    { padding: L.point(30, 30) }
+                );
+            }
+            else {
+                drawControl.addTo(map);
+                if(shapeList.length > 0) {
+                    map.fitBounds(new L.featureGroup(shapeList).getBounds());
                 }
-
-            }).bind(node);
-
-            if (ourShape == null && shapeList.length > 0) {
-                map.fitBounds(new L.featureGroup(shapeList).getBounds());
             }
         }
 
-        var n = this;
         $.getScript('geofence/js/leaflet/leaflet-src.js')
             .done(function (data, textStatus, jqxhr) {
                 $.getScript('geofence/js/Leaflet.draw/dist/leaflet.draw.js')
@@ -193,7 +179,7 @@ RED.nodes.registerType('geofence', {
                             .done(function (data, textStatus, jqxhr) {
                                 $.getScript('geofence/js/L.GeoSearch/src/js/l.geosearch.provider.openstreetmap.js')
                                     .done(function (data, textStatus, jqxhr) {
-                                        setupMap(n);
+                                        initializeMap(node);
 
                                     })
                                     .fail(function (jqxhr, settings, exception) {
@@ -222,16 +208,21 @@ RED.nodes.registerType('geofence', {
 
     },
     oneditsave: function () {
-
         var map = window.node_geofence_map;
         var n = this;
 
-        console.log("this");
-        console.log(this);
-        var node = RED.nodes.node(this.id);
-        var nodeManager = RED.nodes.node(node.manager);
-        console.log(node);
-        console.log(nodeManager);
+        //Remove old geofence
+        console.log(initialNodeManagerID)
+        if(initialNodeManagerID != null){
+            console.log("HAD OLD initial node manager")
+            var oldNodeManager = RED.nodes.node(initialNodeManagerID);
+            console.log(oldNodeManager);
+            if(oldNodeManager != null){
+                console.log("FOUND initial node manager")
+                delete oldNodeManager.geofences[n.id];
+            }
+        }
+
 
         if (nodeManager == undefined) {
             console.log("can't find config node!");
