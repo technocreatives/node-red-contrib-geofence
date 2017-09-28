@@ -31,6 +31,7 @@ module.exports = function (RED) {
         this.geofenceName = n.geofenceName;
         this.fenceID = n.fenceID;
         var node = this;
+        var previousInFence = false;
 
         node.on('input', function (msg) {
 
@@ -56,7 +57,6 @@ module.exports = function (RED) {
             }
 
             if (loc) {
-                var isInShape = false;
 
                 var managerID = RED.nodes.getNode(node.id).manager;
                 var manager = RED.nodes.getNode(managerID);
@@ -66,32 +66,27 @@ module.exports = function (RED) {
 
                 var points = [];
                 var fenceCoordinates = fence.geometry.coordinates[0];
-                console.log(fenceCoordinates);
+                
                 for (var j = 0; j < fenceCoordinates.length; j++) {
 
                     var nextElem = { latitude: fenceCoordinates[j][1], longitude: fenceCoordinates[j][0] };
 
                     points.push(nextElem);
                 }
+                var inFence = geolib.isPointInside(loc, points);
+                
+                var payload = {};
+                payload.id = node.id;
+                payload.name = n.name;
 
-                console.log(loc);
-                console.log(points);
-                isInShape = geolib.isPointInside(loc, points);
-                console.log(isInShape);
+                payload.in = inFence;
 
+                payload.onEnter = !previousInFence && inFence;
+                payload.onExit = previousInFence && !inFence;
 
-                var fenceData = {};
-                fenceData.id = node.fenceID;
-                fenceData.name = node.geofenceName;
+                previousInFence = inFence;
 
-                if (isInShape) {
-                    fenceData.in = true;
-                } else {
-                    fenceData.in = false;
-                }
-
-                msg.fenceData = fenceData;
-
+                msg.payload = payload;
             }
 
             message.push(msg);
