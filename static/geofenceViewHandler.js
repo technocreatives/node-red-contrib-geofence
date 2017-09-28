@@ -21,7 +21,7 @@ RED.nodes.registerType('geofence', {
     outputs: 1,
     icon: "white-globe.png",
     label: function () {
-        return this.name || "";
+        return this.name || "No geofence assigned.";
     },
     labelStyle: function () {
         return this.name ? "node_label_italic" : "";
@@ -42,6 +42,7 @@ RED.nodes.registerType('geofence', {
             }).addTo(map);
 
             drawnItems = new L.FeatureGroup();
+
             map.addLayer(drawnItems);
 
             drawControl = new L.Control.Draw({
@@ -50,9 +51,11 @@ RED.nodes.registerType('geofence', {
                     polyline: false,
                     marker: false,                    
                     circle: false,
-                },
-                edit: false
+                    circlemarker: false
+                }
             });
+            map.addControl(drawControl);
+
 
             if (nodeManager == undefined) {
                 console.log("can't find config node!");
@@ -61,10 +64,8 @@ RED.nodes.registerType('geofence', {
 
             var lastTextBox = document.getElementById("node-geofence-map");
 
-            map.on('draw:created', function (e) {
+            map.on(L.Draw.Event.CREATED, function (e) {
                 var layer = e.layer;
-                var type = e.layerType;
-                layer.shape = "geofence";
                 if (drawnItems.hasLayer(layer) == false) {
                     drawnItems.addLayer(layer);
                 }
@@ -130,7 +131,7 @@ RED.nodes.registerType('geofence', {
             console.log(node);
 
             Object.keys(nodeManager.geofences).map(function (key, index) {
-                var fence = L.geoJSON(nodeManager.geofences[key]);
+                var fence = L.GeoJSON.geometryToLayer(nodeManager.geofences[key]);
 
 
                 var myFence = key == node.id;
@@ -152,6 +153,15 @@ RED.nodes.registerType('geofence', {
                 fence.bindTooltip(fenceName);
             });
 
+            var editControl = new L.Control.Draw({
+                draw: false,
+                edit: {
+                    featureGroup: drawnItems
+                }
+            });
+
+            
+            map.addControl(editControl);
             map.invalidateSize(true);
 
 
