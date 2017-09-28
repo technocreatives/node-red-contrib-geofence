@@ -65,19 +65,18 @@ RED.nodes.registerType('geofence', {
             var lastTextBox = document.getElementById("node-geofence-map");
 
             map.on(L.Draw.Event.CREATED, function (e) {
-                var layer = e.layer;
-                if (drawnItems.hasLayer(layer) == false) {
-                    drawnItems.addLayer(layer);
+                var fence = e.layer;
+                fence.nodeID = node.id;
+                if (drawnItems.hasLayer(fence) == false) {
+                    drawnItems.addLayer(fence);
                 }
                 
 
-                layer.setStyle({color: '#ffffff'});
-                layer.setStyle({fillColor: '#42f4d7'});
+                fence.setStyle({color: '#ffffff'});
+                fence.setStyle({fillColor: '#42f4d7'});
 
-                node.layer = layer;
-                
                 map.fitBounds(
-                    layer.getBounds(),
+                    fence.getBounds(),
                     { padding: L.point(30, 30) }
                 );
 
@@ -86,11 +85,11 @@ RED.nodes.registerType('geofence', {
 
             map.on('draw:edited', function (e) {
                 console.log("edited", e);
-                var layers = e.layers;
-                layers.eachLayer(function (layer) {
-                    layer.shape = "geofence";
-                    if (drawnItems.hasLayer(layer) == false) {
-                        drawnItems.addLayer(layer);
+                var fences = e.layers;
+                fences.eachLayer(function (fence) {
+                    fence.shape = "geofence";
+                    if (drawnItems.hasLayer(fence) == false) {
+                        drawnItems.addLayer(fence);
                     }
                 });
             });
@@ -114,10 +113,10 @@ RED.nodes.registerType('geofence', {
             var ourShape;
             if(nodeManager.geofences[node.id]) {
                 ourShape = L.geoJSON(nodeManager.geofences[node.id]);
-                // map.fitBounds(
-                //     ourShape.getBounds(),
-                //     { padding: L.point(30, 30) }
-                // );
+                map.fitBounds(
+                    ourShape.getBounds(),
+                    { padding: L.point(30, 30) }
+                );
             }
             else {
                 drawControl.addTo(map);
@@ -130,13 +129,16 @@ RED.nodes.registerType('geofence', {
 
             console.log(node);
 
-            Object.keys(nodeManager.geofences).map(function (key, index) {
-                var fence = L.GeoJSON.geometryToLayer(nodeManager.geofences[key]);
+            Object.keys(nodeManager.geofences).map(function (nodeID, index) {
+                var fence = L.GeoJSON.geometryToLayer(nodeManager.geofences[nodeID]);
+                fence.nodeID = nodeID;
 
 
-                var myFence = key == node.id;
+                var myFence = nodeID == node.id;
 
                 console.log("here in geofence setupmap");
+                console.log(fence);
+
 
                 if (myFence == true) {
                     fence.setStyle({color: '#ffffff'});
@@ -149,7 +151,7 @@ RED.nodes.registerType('geofence', {
                 shapeList.push(fence);
                 fence.addTo(drawnItems);
 
-                var fenceName = RED.nodes.node(key).name;
+                var fenceName = RED.nodes.node(nodeID).name;
                 fence.bindTooltip(fenceName);
             });
 
@@ -176,9 +178,9 @@ RED.nodes.registerType('geofence', {
 
             }).bind(node);
 
-            // if (ourShape == null && shapeList.length > 0) {
-            //     map.fitBounds(new L.featureGroup(shapeList).getBounds());
-            // }
+            if (ourShape == null && shapeList.length > 0) {
+                map.fitBounds(new L.featureGroup(shapeList).getBounds());
+            }
         }
 
         var n = this;
@@ -235,9 +237,22 @@ RED.nodes.registerType('geofence', {
             return;
         }
 
-        if(node.layer) {
-            nodeManager.geofences[n.id] = node.layer.toGeoJSON();
-        }
+        var geofences = {};
+
+        console.log(drawnItems);
+
+        drawnItems.eachLayer(function (layer) {
+            var nodeID = layer.nodeID;
+            console.log(nodeID);
+            console.log(layer);
+
+            var geoJSON = layer.toGeoJSON();
+
+            geofences[nodeID] = geoJSON;
+        });
+
+        nodeManager.geofences = geofences;
+
 
        
         delete window.node_geofence_map;
