@@ -72,7 +72,7 @@ function createOtherGeofenceLayers(node, map, drawnItems) {
     var shapeList = [];
 
     Object.keys(node.geofences).map(function (key, index) {
-        var fence = node.geofences[key];
+        var fence = L.geoJSON(node.geofences[key]);
 
         var deleteButton = document.createElement('button');
         var deleteID = "delete" + i;

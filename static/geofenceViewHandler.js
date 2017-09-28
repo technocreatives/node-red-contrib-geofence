@@ -48,13 +48,8 @@ RED.nodes.registerType('geofence', {
                 draw: {
                     position: 'topleft',
                     polyline: false,
-                    marker: false,
-                    circle: {
-                        shapeOptions: {
-                            color: '#ffffff',
-                            fillColor: '#42f4d7'
-                        }
-                    }
+                    marker: false,                    
+                    circle: false,
                 },
                 edit: false
             });
@@ -115,26 +110,27 @@ RED.nodes.registerType('geofence', {
 
 
             var doesOurGeofenceExist = false;
-            var ourShape = nodeManager.geofences[node.id];
-            console.log("this is our shape");
-            console.log(ourShape);
-
-            if (ourShape == null) {
-                drawControl.addTo(map);
-            }
-            else {
+            var ourShape;
+            if(nodeManager.geofences[node.id]) {
+                ourShape = L.geoJSON(nodeManager.geofences[node.id]);
                 // map.fitBounds(
                 //     ourShape.getBounds(),
                 //     { padding: L.point(30, 30) }
                 // );
             }
+            else {
+                drawControl.addTo(map);
+            }
+            console.log("this is our shape");
+            console.log(nodeManager.geofences[node.id]);
+
 
             var shapeList = [];
 
             console.log(node);
 
             Object.keys(nodeManager.geofences).map(function (key, index) {
-                var fence = nodeManager.geofences[key];
+                var fence = L.geoJSON(nodeManager.geofences[key]);
 
 
                 var myFence = key == node.id;
@@ -161,7 +157,7 @@ RED.nodes.registerType('geofence', {
 
             $(window).on('geofenceDeleted', function (e) {
                 
-                drawnItems.removeLayer(nodeManager.geofences[e.nodeID]);
+                drawnItems.removeLayer(L.geoJSON(nodeManager.geofences[e.nodeID]));
                 
                 if (node.id == e.nodeID) {
                     node.name = "No geofence assigned.";
@@ -220,9 +216,9 @@ RED.nodes.registerType('geofence', {
         console.log("this");
         console.log(this);
         var node = RED.nodes.node(this.id);
+        var nodeManager = RED.nodes.node(node.manager);
         console.log(node);
         console.log(nodeManager);
-        var nodeManager = RED.nodes.node(node.manager);
 
         if (nodeManager == undefined) {
             console.log("can't find config node!");
@@ -230,7 +226,7 @@ RED.nodes.registerType('geofence', {
         }
 
         if(node.layer) {
-            nodeManager.geofences[n.id] = node.layer;
+            nodeManager.geofences[n.id] = node.layer.toGeoJSON();
         }
 
        
