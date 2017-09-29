@@ -22,14 +22,29 @@
 </script>
 
 <script type="text/javascript">
+
+    function subscribeToNodeDeletion() {
+        
+        RED.events.on("nodes:remove", function (node) {
+            var managerID = node.manager;
+            var manager = RED.nodes.node(managerID);
+
+            if(nodeManager != null){
+                delete nodeManager.geofences[node.id];
+            }
+        });
+    }
+
     RED.nodes.registerType('geofence-manager', {
         category: 'config',
         defaults: {
-            name: { value: "Geofence manager." },
-            geofences: { value: {} }
+            name: { value: "Geofence manager" },
+            geofences: { value: {} },
+            subscribeFunc: { value: subscribeToNodeDeletion() }
         },
         label: function () {
             return this.name || "";
         },
     });
+
 </script>

@@ -76,7 +76,6 @@ module.exports = function (RED) {
                 var inFence = geolib.isPointInside(loc, points);
                 
                 var payload = {};
-                payload.id = node.id;
                 payload.name = n.name;
 
                 payload.in = inFence;
