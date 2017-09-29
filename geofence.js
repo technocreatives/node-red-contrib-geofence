@@ -31,6 +31,7 @@ module.exports = function (RED) {
         this.geofenceName = n.geofenceName;
         this.fenceID = n.fenceID;
         var node = this;
+        var previousInFence = false;
 
         node.on('input', function (msg) {
 
@@ -56,44 +57,35 @@ module.exports = function (RED) {
             }
 
             if (loc) {
-                var isInShape = false;
 
-                var managerID = RED.nodes.node(node.id).manager;
-                var manager = RED.nodes.node(managerID);
+                var managerID = RED.nodes.getNode(node.id).manager;
+                var manager = RED.nodes.getNode(managerID);
 
                 var fence = manager.geofences[node.id];
 
 
-                if (fence._radius) {
+                var points = [];
+                var fenceCoordinates = fence.geometry.coordinates[0];
+                
+                for (var j = 0; j < fenceCoordinates.length; j++) {
 
-                    var centre = { latitude: fence._latlng.lat, longitude: fence._latlng.lng };
+                    var nextElem = { latitude: fenceCoordinates[j][1], longitude: fenceCoordinates[j][0] };
 
-                    isInShape = geolib.isPointInCircle(loc, centre, Math.round(fence._mRadius));
-                } else {
-
-                    var points = [];
-                    for (var j = 0; j < fence._latlngs[0].length; j++) {
-
-                        var nextElem = { latitude: fence._latlngs[0][j].lat, longitude: fence._latlngs[0][j].lng };
-
-                        points.push(nextElem);
-                    }
-
-                    isInShape = geolib.isPointInside(loc, points);
+                    points.push(nextElem);
                 }
+                var inFence = geolib.isPointInside(loc, points);
+                
+                var payload = {};
+                payload.name = n.name;
 
-                var fenceData = {};
-                fenceData.id = node.fenceID;
-                fenceData.name = node.geofenceName;
+                payload.in = inFence;
 
-                if (isInShape) {
-                    fenceData.in = true;
-                } else {
-                    fenceData.in = false;
-                }
+                payload.onEnter = !previousInFence && inFence;
+                payload.onExit = previousInFence && !inFence;
 
-                msg.fenceData = fenceData;
+                previousInFence = inFence;
 
+                msg.payload = payload;
             }
 
             message.push(msg);

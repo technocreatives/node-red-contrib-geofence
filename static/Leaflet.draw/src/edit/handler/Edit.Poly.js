@@ -1,11 +1,14 @@
 L.Edit = L.Edit || {};
 
-/*
- * L.Edit.Poly is an editing handler for polylines and polygons.
+/**
+ * @class L.Edit.Polyline
+ * @aka L.Edit.Poly
+ * @aka Edit.Poly
  */
 L.Edit.Poly = L.Handler.extend({
 	options: {},
 
+	// @method initialize(): void
 	initialize: function (poly, options) {
 
 		this.latlngs = [poly._latlngs];
@@ -13,13 +16,19 @@ L.Edit.Poly = L.Handler.extend({
 			this.latlngs = this.latlngs.concat(poly._holes);
 		}
 
-		this._verticesHandlers = [];
-		for (var i = 0; i < this.latlngs.length; i++) {
-			this._verticesHandlers.push(new L.Edit.PolyVerticesEdit(poly, this.latlngs[i], options));
-		}
-
 		this._poly = poly;
 		L.setOptions(this, options);
+
+		this._poly.on('revert-edited', this._updateLatLngs, this);
+	},
+
+	// Compatibility method to normalize Poly* objects
+	// between 0.7.x and 1.0+
+	_defaultShape: function () {
+		if (!L.Polyline._flat) {
+			return this._poly._latlngs;
+		}
+		return L.Polyline._flat(this._poly._latlngs) ? this._poly._latlngs : this._poly._latlngs[0];
 	},
 
 	_eachVertexHandler: function (callback) {
@@ -28,26 +37,51 @@ L.Edit.Poly = L.Handler.extend({
 		}
 	},
 
+	// @method addHooks(): void
+	// Add listener hooks to this handler
 	addHooks: function () {
+		this._initHandlers();
 		this._eachVertexHandler(function (handler) {
 			handler.addHooks();
 		});
 	},
 
+	// @method removeHooks(): void
+	// Remove listener hooks from this handler
 	removeHooks: function () {
 		this._eachVertexHandler(function (handler) {
 			handler.removeHooks();
 		});
 	},
 
+	// @method updateMarkers(): void
+	// Fire an update for each vertex handler
 	updateMarkers: function () {
 		this._eachVertexHandler(function (handler) {
 			handler.updateMarkers();
 		});
+	},
+
+	_initHandlers: function () {
+		this._verticesHandlers = [];
+		for (var i = 0; i < this.latlngs.length; i++) {
+			this._verticesHandlers.push(new L.Edit.PolyVerticesEdit(this._poly, this.latlngs[i], this.options));
+		}
+	},
+
+	_updateLatLngs: function (e) {
+		this.latlngs = [e.layer._latlngs];
+		if (e.layer._holes) {
+			this.latlngs = this.latlngs.concat(e.layer._holes);
+		}
 	}
 
 });
 
+/**
+ * @class L.Edit.PolyVerticesEdit
+ * @aka Edit.PolyVerticesEdit
+ */
 L.Edit.PolyVerticesEdit = L.Handler.extend({
 	options: {
 		icon: new L.DivIcon({
@@ -66,6 +100,7 @@ L.Edit.PolyVerticesEdit = L.Handler.extend({
 
 	},
 
+	// @method intialize(): void
 	initialize: function (poly, latlngs, options) {
 		// if touch, switch to touch icon
 		if (L.Browser.touch) {
@@ -78,15 +113,29 @@ L.Edit.PolyVerticesEdit = L.Handler.extend({
 		}
 
 		this._latlngs = latlngs;
-		
+
 		L.setOptions(this, options);
 	},
 
+	// Compatibility method to normalize Poly* objects
+	// between 0.7.x and 1.0+
+	_defaultShape: function () {
+		if (!L.Polyline._flat) {
+			return this._latlngs;
+		}
+		return L.Polyline._flat(this._latlngs) ? this._latlngs : this._latlngs[0];
+	},
+
+	// @method addHooks(): void
+	// Add listener hooks to this handler.
 	addHooks: function () {
 		var poly = this._poly;
 
 		if (!(poly instanceof L.Polygon)) {
-			poly.options.editing.fill = false;
+			poly.options.fill = false;
+			if (poly.options.editing) {
+				poly.options.editing.fill = false;
+			}
 		}
 
 		poly.setStyle(poly.options.editing);
@@ -102,6 +151,8 @@ L.Edit.PolyVerticesEdit = L.Handler.extend({
 		}
 	},
 
+	// @method removeHooks(): void
+	// Remove listener hooks from this handler.
 	removeHooks: function () {
 		var poly = this._poly;
 
@@ -114,6 +165,8 @@ L.Edit.PolyVerticesEdit = L.Handler.extend({
 		}
 	},
 
+	// @method updateMarkers(): void
+	// Clear markers and update their location
 	updateMarkers: function () {
 		this._markerGroup.clearLayers();
 		this._initMarkers();
@@ -125,7 +178,7 @@ L.Edit.PolyVerticesEdit = L.Handler.extend({
 		}
 		this._markers = [];
 
-		var latlngs = this._latlngs,
+		var latlngs = this._defaultShape(),
 			i, j, len, marker;
 
 		for (i = 0, len = latlngs.length; i < len; i++) {
@@ -165,8 +218,8 @@ L.Edit.PolyVerticesEdit = L.Handler.extend({
 			.on('drag', this._onMarkerDrag, this)
 			.on('dragend', this._fireEdit, this)
 			.on('touchmove', this._onTouchMove, this)
-			.on('MSPointerMove', this._onTouchMove, this)
 			.on('touchend', this._fireEdit, this)
+			.on('MSPointerMove', this._onTouchMove, this)
 			.on('MSPointerUp', this._fireEdit, this);
 
 		this._markerGroup.addLayer(marker);
@@ -179,8 +232,9 @@ L.Edit.PolyVerticesEdit = L.Handler.extend({
 	},
 
 	_spliceLatLngs: function () {
-		var removed = [].splice.apply(this._latlngs, arguments);
-		this._poly._convertLatLngs(this._latlngs, true);
+		var latlngs = this._defaultShape();
+		var removed = [].splice.apply(latlngs, arguments);
+		this._poly._convertLatLngs(latlngs, true);
 		this._poly.redraw();
 		return removed;
 	},
@@ -199,13 +253,15 @@ L.Edit.PolyVerticesEdit = L.Handler.extend({
 			.off('dragend', this._fireEdit, this)
 			.off('touchmove', this._onMarkerDrag, this)
 			.off('touchend', this._fireEdit, this)
-			.off('click', this._onMarkerClick, this);
+			.off('click', this._onMarkerClick, this)
+			.off('MSPointerMove', this._onTouchMove, this)
+			.off('MSPointerUp', this._fireEdit, this);
 	},
 
 	_fireEdit: function () {
 		this._poly.edited = true;
 		this._poly.fire('edit');
-		this._poly._map.fire('draw:editvertex', { layers: this._markerGroup });
+		this._poly._map.fire(L.Draw.Event.EDITVERTEX, { layers: this._markerGroup, poly: this._poly });
 	},
 
 	_onMarkerDrag: function (e) {
@@ -230,6 +286,14 @@ L.Edit.PolyVerticesEdit = L.Handler.extend({
 				var originalColor = poly.options.color;
 				poly.setStyle({ color: this.options.drawError.color });
 
+				// Manually trigger 'dragend' behavior on marker we are about to remove
+				// WORKAROUND: introduced in 1.0.0-rc2, may be related to #4484
+				if (L.version.indexOf('0.7') !== 0) {
+					marker.dragging._draggable._onUp(e);
+				}
+				this._onMarkerClick(e); // Remove violating marker
+				// FIXME: Reset the marker to it's original position (instead of remove)
+
 				if (tooltip) {
 					tooltip.updateContent({
 						text: L.drawLocal.draw.handlers.polyline.error
@@ -241,12 +305,11 @@ L.Edit.PolyVerticesEdit = L.Handler.extend({
 					poly.setStyle({ color: originalColor });
 					if (tooltip) {
 						tooltip.updateContent({
-							text:  L.drawLocal.edit.handlers.edit.tooltip.text,
-							subtext:  L.drawLocal.edit.handlers.edit.tooltip.subtext
+							text: L.drawLocal.edit.handlers.edit.tooltip.text,
+							subtext: L.drawLocal.edit.handlers.edit.tooltip.subtext
 						});
 					}
 				}, 1000);
-				this._onMarkerClick(e); // Reset the marker to it's original position
 			}
 		}
 
@@ -260,7 +323,7 @@ L.Edit.PolyVerticesEdit = L.Handler.extend({
 			marker = e.target;
 
 		// If removing this point would create an invalid polyline/polygon don't remove
-		if (this._latlngs.length < minPoints) {
+		if (this._defaultShape().length < minPoints) {
 			return;
 		}
 
@@ -331,6 +394,7 @@ L.Edit.PolyVerticesEdit = L.Handler.extend({
 		marker1._middleRight = marker2._middleLeft = marker;
 
 		onDragStart = function () {
+			marker.off('touchmove', onDragStart, this);
 			var i = marker2._index;
 
 			marker._index = i;
@@ -355,14 +419,12 @@ L.Edit.PolyVerticesEdit = L.Handler.extend({
 		};
 
 		onDragEnd = function () {
-
 			marker.off('dragstart', onDragStart, this);
 			marker.off('dragend', onDragEnd, this);
 			marker.off('touchmove', onDragStart, this);
 
 			this._createMiddleMarker(marker1, marker);
 			this._createMiddleMarker(marker, marker2);
-
 		};
 
 		onClick = function () {
