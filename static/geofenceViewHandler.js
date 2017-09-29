@@ -142,8 +142,8 @@ RED.nodes.registerType('geofence', {
                     fence.setStyle({color: '#ffffff'});
                     fence.setStyle({fillColor: '#42f4d7'});
                 } else {
-                    fence.setStyle({color: '#000000'});
-                    fence.setStyle({fillColor: '#7f8082'});
+                    fence.setStyle({color: '#808080'});
+                    fence.setStyle({fillColor: '#808080'});
                 }
 
                 shapeList.push(fence);
