@@ -103,7 +103,6 @@ RED.nodes.registerType('geofence', {
             });
 
             $("#node-input-manager").change(function(val, pal){
-                console.log("SETTING UP NODEMANAGER")
                 var nodeManagerId = $("#node-input-manager option:selected").val();
                 nodeManager = RED.nodes.node(nodeManagerId);
                 if(nodeManagerId != "_ADD_"){
@@ -122,8 +121,6 @@ RED.nodes.registerType('geofence', {
             
             drawnItems.clearLayers();
             nodeManager = nodeM;
-            console.log("SETTING UP NODEMANAGER")
-            console.log(this);
 
             var shapeList = [];
 
@@ -133,10 +130,6 @@ RED.nodes.registerType('geofence', {
 
 
                 var myFence = nodeID == node.id;
-
-                console.log("here in geofence setupmap");
-                console.log(fence);
-
 
                 if (myFence == true) {
                     fence.setStyle({color: '#ffffff'});
@@ -212,13 +205,9 @@ RED.nodes.registerType('geofence', {
         var n = this;
 
         //Remove old geofence
-        console.log(initialNodeManagerID)
         if(initialNodeManagerID != null){
-            console.log("HAD OLD initial node manager")
             var oldNodeManager = RED.nodes.node(initialNodeManagerID);
-            console.log(oldNodeManager);
             if(oldNodeManager != null){
-                console.log("FOUND initial node manager")
                 delete oldNodeManager.geofences[n.id];
             }
         }
@@ -231,12 +220,8 @@ RED.nodes.registerType('geofence', {
 
         var geofences = {};
 
-        console.log(drawnItems);
-
         drawnItems.eachLayer(function (layer) {
             var nodeID = layer.nodeID;
-            console.log(nodeID);
-            console.log(layer);
 
             var geoJSON = layer.toGeoJSON();
 

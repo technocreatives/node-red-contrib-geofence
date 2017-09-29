@@ -35,19 +35,16 @@
 </script>
 
 <script type="text/x-red" data-help-name="geofence">
-    <p>A simple geofence filter node</p>
+    <p>A simple geofence information node</p>
     <p>
-        It supports circle and polygons, and will filter all messages that either fall inside or outside the region described depending
-        on the selected mode.
-    </p>
-    <p>Alternatively it will add <b>msg.location.inarea</b> to the msg.</p>
-    <p>
-        If the node is given a name property then <b>msg.location.isat</b> will be an array containing a list of named areas
-        that the point is inside of and <b>msg.location.distance</b> will contain an array of name, distance pairs. Where
-        distance is the dinstance in metres to from the point to the centroid of the region.
+        <p>It supports squares and polygons, and will assign the payload to be the following information concerning the geofence:</p>
+        <p>"name": name of the geofence</p>
+        <p>"in": whether you are currently in the geofence</p>
+        <p>"onEnter": whether you just entered the geofence (will be only true the one time you went from being outside the geofence to inside it, will be true if the very first message received is inside the geofence)</p>
+        <p>"onExit": whether you just entered the geofence (will be only true the one time you went from being inside the geofence to outside it, won't be true if the very first message you receive is outside the geofence)</p>
     </p>
     <p>
-        This node requires inputs with <i>msg.location.lat</i> &amp; <i>msg.location.lon</i> or <i>msg.lat</i> &amp; <i>msg.lon</i>        values.
+        This node requires inputs with <i>msg.location.lat</i> &amp; <i>msg.location.lon</i> or <i>msg.lat</i> &amp; <i>msg.lon</i> values.
     </p>
 </script>
 <script type="text/javascript" src="geofence/js/geofenceViewHandler.js"/>

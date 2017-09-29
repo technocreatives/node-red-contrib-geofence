@@ -6,10 +6,7 @@ Geofence node for Node-RED
 This uses the geolib node to check if points fall with in a given area. Points are 
 taken from msg.location.lat & msg.location.lon
 
-Areas can be circular or rectangular.
+Areas can be rectangular or polygons.
 
-Messages can be filtered depending on if they fall inside or outside the given area
+Messages will have information as to whether they are inside or outside of a geofence, and will have readable events when they enter of exit a geofence 
 
-The config node uses leaflet and openstreetmap data so requires internet access. 
-You can drop back to a non graphical config by replacing geofence.html with 
-geofence-nomap.html
