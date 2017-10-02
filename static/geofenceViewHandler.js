@@ -60,7 +60,11 @@ RED.nodes.registerType('geofence', {
                     polyline: false,
                     marker: false,                    
                     circle: false,
-                    circlemarker: false
+                    circlemarker: false,
+                    polygon: {
+                        showLength: true
+                    }
+
                 }
             });
             map.addControl(drawControl);
