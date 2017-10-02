@@ -63,6 +63,8 @@ module.exports = function (RED) {
 
                 var fence = manager.geofences[node.id];
 
+                RED.comms.publish(node.id + "/locationUpdate", loc);
+
                 if(fence == null){
                     node.warn("No geofence defined");
                     return;

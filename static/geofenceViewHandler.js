@@ -137,6 +137,17 @@ RED.nodes.registerType('geofence', {
 
             var shapeList = [];
 
+            var marker;
+            RED.comms.subscribe(node.id + "/locationUpdate", function(topic, location) {
+
+                var location = new L.LatLng(location.latitude, location.longitude)
+                if(marker == null){
+                    marker = L.marker(location);
+                    marker.addTo(map);
+                }
+	            marker.setLatLng(location)
+            });
+
             Object.keys(nodeManager.geofences).map(function (nodeID, index) {
                 var fence = L.GeoJSON.geometryToLayer(nodeManager.geofences[nodeID]);
                 fence.nodeID = nodeID;
