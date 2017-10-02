@@ -33,10 +33,14 @@ RED.nodes.registerType('geofence', {
         function initializeMap(node) {
             map = L.map('node-geofence-map').setView([57.696, 11.9788], 9);
 
+            var osmUrl = 'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+            var osmAttrib = '&copy; <a href="http://openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+            var osm = L.tileLayer(osmUrl, { maxZoom: 18, attribution: osmAttrib });
+
             window.node_geofence_map = map;
-            L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 20,
-                attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors'
+            L.tileLayer(osmUrl, {
+                maxZoom: 18,
+                attribution: osmAttrib
             }).addTo(map);
 
 
@@ -60,6 +64,15 @@ RED.nodes.registerType('geofence', {
                 }
             });
             map.addControl(drawControl);
+
+
+            L.control.layers(
+                {
+                    'osm': osm.addTo(map),
+                    "google": L.tileLayer('http://www.google.cn/maps/vt?lyrs=s@189&gl=cn&x={x}&y={y}&z={z}', {
+                        attribution: 'google'
+                    })
+                }, { 'drawlayer': drawnItems }, { collapsed: true }).addTo(map);
 
             var editControl = new L.Control.Draw({
                 draw: false,
@@ -123,6 +136,17 @@ RED.nodes.registerType('geofence', {
             nodeManager = nodeM;
 
             var shapeList = [];
+
+            var marker;
+            RED.comms.subscribe(node.id + "/locationUpdate", function(topic, location) {
+
+                var location = new L.LatLng(location.latitude, location.longitude)
+                if(marker == null){
+                    marker = L.marker(location);
+                    marker.addTo(map);
+                }
+	            marker.setLatLng(location)
+            });
 
             Object.keys(nodeManager.geofences).map(function (nodeID, index) {
                 var fence = L.GeoJSON.geometryToLayer(nodeManager.geofences[nodeID]);
