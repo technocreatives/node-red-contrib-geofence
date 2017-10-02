@@ -63,6 +63,10 @@ module.exports = function (RED) {
 
                 var fence = manager.geofences[node.id];
 
+                if(fence == null){
+                    node.warn("No geofence defined");
+                    return;
+                }
 
                 var points = [];
                 var fenceCoordinates = fence.geometry.coordinates[0];
