@@ -29,7 +29,15 @@ RED.nodes.registerType('geofence', {
     },
     oneditprepare: function () {
         node = this;
-        
+        var fenceEditOptions;
+        var ownFenceStyle = {
+            color: '#ffffff',
+            fillColor: '#42f4d7'
+        };
+        var otherFenceStyle = {
+            color: '#808080',
+            fillColor: '#808080'
+        };
         function initializeMap(node) {
             map = L.map('node-geofence-map').setView([57.696, 11.9788], 9);
 
@@ -37,9 +45,21 @@ RED.nodes.registerType('geofence', {
             var osmAttrib = '&copy; <a href="http://openstreetmap.org/copyright">OpenStreetMap</a> contributors';
             var osm = L.tileLayer(osmUrl, { maxZoom: 18, attribution: osmAttrib });
 
+            fenceEditOptions = {
+                showLength: true,
+                icon: new L.DivIcon({
+                    iconSize: new L.Point(8, 8),
+                    className: 'leaflet-div-icon leaflet-editing-icon test'
+                }),
+                touchIcon: new L.DivIcon({
+                    iconSize: new L.Point(15, 15),
+                    className: 'leaflet-div-icon leaflet-editing-icon leaflet-touch-icon test'
+                })
+            };
+
             window.node_geofence_map = map;
             L.tileLayer(osmUrl, {
-                maxZoom: 18,
+                maxZoom: 25,
                 attribution: osmAttrib
             }).addTo(map);
 
@@ -54,6 +74,7 @@ RED.nodes.registerType('geofence', {
             drawnItems = new L.FeatureGroup();
             map.addLayer(drawnItems);
             
+            
             drawControl = new L.Control.Draw({
                 draw: {
                     position: 'topleft',
@@ -62,9 +83,16 @@ RED.nodes.registerType('geofence', {
                     circle: false,
                     circlemarker: false,
                     polygon: {
-                        showLength: true
+                        showLength: true,
+                        icon: new L.DivIcon({
+                            iconSize: new L.Point(8, 8),
+                            className: 'leaflet-div-icon leaflet-editing-icon test'
+                        }),
+                        touchIcon: new L.DivIcon({
+                            iconSize: new L.Point(15, 15),
+                            className: 'leaflet-div-icon leaflet-editing-icon leaflet-touch-icon test'
+                        })
                     }
-
                 }
             });
             map.addControl(drawControl);
@@ -74,7 +102,12 @@ RED.nodes.registerType('geofence', {
                 {
                     'osm': osm.addTo(map),
                     "google": L.tileLayer('http://www.google.cn/maps/vt?lyrs=s@189&gl=cn&x={x}&y={y}&z={z}', {
-                        attribution: 'google'
+                        attribution: 'google',
+                        maxZoom: 25
+                    }),
+                    'custom': L.tileLayer('https://api.mapbox.com/v4/mapbox.streets/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibWFnbnVzc3AiLCJhIjoiY2lnM3AyeTlrMDJrcXYza2hwYXF1cWtidCJ9.wuim_DRupGAUe6gbLSY-jA', {
+                        attribution: 'MagnusMaps (c)',
+                        maxZoom: 25
                     })
                 }, { 'drawlayer': drawnItems }, { collapsed: true }).addTo(map);
 
@@ -93,8 +126,7 @@ RED.nodes.registerType('geofence', {
                     drawnItems.addLayer(fence);
                 }
 
-                fence.setStyle({color: '#ffffff'});
-                fence.setStyle({fillColor: '#42f4d7'});
+                fence.setStyle(ownFenceStyle);
 
                 map.fitBounds(
                     fence.getBounds(),
@@ -154,17 +186,16 @@ RED.nodes.registerType('geofence', {
 
             Object.keys(nodeManager.geofences).map(function (nodeID, index) {
                 var fence = L.GeoJSON.geometryToLayer(nodeManager.geofences[nodeID]);
+                fence.editing.options = fenceEditOptions;
                 fence.nodeID = nodeID;
 
 
                 var myFence = nodeID == node.id;
 
                 if (myFence == true) {
-                    fence.setStyle({color: '#ffffff'});
-                    fence.setStyle({fillColor: '#42f4d7'});
+                    fence.setStyle(ownFenceStyle);
                 } else {
-                    fence.setStyle({color: '#808080'});
-                    fence.setStyle({fillColor: '#808080'});
+                    fence.setStyle(otherFenceStyle);
                 }
 
                 shapeList.push(fence);
