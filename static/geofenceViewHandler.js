@@ -154,22 +154,24 @@ RED.nodes.registerType('geofence', {
             $("#node-input-manager").change(function(val, pal){
                 var nodeManagerId = $("#node-input-manager option:selected").val();
                 nodeManager = RED.nodes.node(nodeManagerId);
-                if(nodeManagerId != "_ADD_"){
-                    changeNodeManager(nodeManager);
-                }
+                changeNodeManager(nodeManager);
             });
 
             initialNodeManagerID = $("#node-input-manager option:selected").val();
             var nodeManager = RED.nodes.node(initialNodeManagerID);
-            if(nodeManager != null){
-                changeNodeManager(nodeManager);
-            }
+            changeNodeManager(nodeManager);
         }
 
         function changeNodeManager(nodeM){
             
             drawnItems.clearLayers();
             nodeManager = nodeM;
+
+            if(nodeManager == null){
+                console.log("No node manager selected");
+                drawControl.remove();
+                return;
+            }
 
             var shapeList = [];
 
