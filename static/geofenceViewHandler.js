@@ -224,41 +224,14 @@ RED.nodes.registerType('geofence', {
                 }
             }
         }
+        /*
+        document.write('<script type="text/javascript" src="geofence/js/leaflet/leaflet-src.js"></script>');
+        document.write('<script type="text/javascript" src="geofence/js/Leaflet.draw/dist/leaflet.draw.js"></script>');
+        document.write('<script type="text/javascript" src="geofence/js/L.GeoSearch/src/js/l.control.geosearch.js"></script>');
+        document.write('<script type="text/javascript" src="geofence/js/L.GeoSearch/src/js/l.geosearch.provider.openstreetmap.js"></script>');
+        */
 
-        $.getScript('geofence/js/leaflet/leaflet-src.js')
-            .done(function (data, textStatus, jqxhr) {
-                $.getScript('geofence/js/Leaflet.draw/dist/leaflet.draw.js')
-                    .done(function (data, textStatus, jqxhr) {
-                        $.getScript('geofence/js/L.GeoSearch/src/js/l.control.geosearch.js')
-                            .done(function (data, textStatus, jqxhr) {
-                                $.getScript('geofence/js/L.GeoSearch/src/js/l.geosearch.provider.openstreetmap.js')
-                                    .done(function (data, textStatus, jqxhr) {
-                                        initializeMap(node);
-
-                                    })
-                                    .fail(function (jqxhr, settings, exception) {
-                                        console.log("failed4");
-                                        console.log(exception);
-                                        console.log(exception.stack);
-                                    });
-                            })
-                            .fail(function (jqxhr, settings, exception) {
-                                console.log("failed3");
-                                console.log(exception);
-                                console.log(exception.stack);
-                            });
-                    })
-                    .fail(function (jqxhr, settings, exception) {
-                        console.log("failed2");
-                        console.log(exception);
-                        console.log(exception.stack);
-                    });
-            })
-            .fail(function (jqxhr, settings, exception) {
-                console.log("failed");
-                console.log(exception);
-                console.log(exception.stack);
-            });
+        initializeMap(node);
 
     },
     oneditsave: function () {
