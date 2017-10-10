@@ -45,6 +45,34 @@ RED.nodes.registerType('geofence', {
             var osmAttrib = '&copy; <a href="http://openstreetmap.org/copyright">OpenStreetMap</a> contributors';
             var osm = L.tileLayer(osmUrl, { maxZoom: 18, attribution: osmAttrib });
 
+            var googleUrl = 'http://www.google.cn/maps/vt?lyrs=s@189&gl=cn&x={x}&y={y}&z={z}';
+            var googleAttrib = 'Google';
+            var google = L.tileLayer(googleUrl, { maxZoom: 25, attribution: googleAttrib });
+
+            var customUrl = 'https://api.mapbox.com/v4/mapbox.streets/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibWFnbnVzc3AiLCJhIjoiY2lnM3AyeTlrMDJrcXYza2hwYXF1cWtidCJ9.wuim_DRupGAUe6gbLSY-jA'
+            var customAttrib = 'MagnusMaps (c)';
+            var custom = L.tileLayer(googleUrl, { maxZoom: 25, attribution: customAttrib });
+
+            var mapLayers = {
+                'osm': osm,
+                'google': google,
+                'custom': custom
+            };
+
+            window.node_geofence_map = map;
+
+            var cookieMap = Cookies.get('map') || 'osm';
+            
+            Object.keys(mapLayers).forEach(function (key){
+                mapLayers[key].on('add', function(){
+                    Cookies.set('map', key);
+                });
+            });
+
+            var currentMapLayer = mapLayers[cookieMap];
+
+            currentMapLayer.addTo(map);
+            
             fenceEditOptions = {
                 showLength: true,
                 icon: new L.DivIcon({
@@ -57,13 +85,6 @@ RED.nodes.registerType('geofence', {
                 })
             };
 
-            window.node_geofence_map = map;
-            L.tileLayer(osmUrl, {
-                maxZoom: 25,
-                attribution: osmAttrib
-            }).addTo(map);
-
-
             new L.Control.GeoSearch({
                 provider: new L.GeoSearch.Provider.OpenStreetMap(),
                 position: 'bottomleft',
@@ -73,7 +94,6 @@ RED.nodes.registerType('geofence', {
 
             drawnItems = new L.FeatureGroup();
             map.addLayer(drawnItems);
-            
             
             drawControl = new L.Control.Draw({
                 draw: {
@@ -97,19 +117,7 @@ RED.nodes.registerType('geofence', {
             });
             map.addControl(drawControl);
 
-
-            L.control.layers(
-                {
-                    'osm': osm.addTo(map),
-                    "google": L.tileLayer('http://www.google.cn/maps/vt?lyrs=s@189&gl=cn&x={x}&y={y}&z={z}', {
-                        attribution: 'google',
-                        maxZoom: 25
-                    }),
-                    'custom': L.tileLayer('https://api.mapbox.com/v4/mapbox.streets/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibWFnbnVzc3AiLCJhIjoiY2lnM3AyeTlrMDJrcXYza2hwYXF1cWtidCJ9.wuim_DRupGAUe6gbLSY-jA', {
-                        attribution: 'MagnusMaps (c)',
-                        maxZoom: 25
-                    })
-                }, { 'drawlayer': drawnItems }, { collapsed: true }).addTo(map);
+            L.control.layers(mapLayers, { 'drawlayer': drawnItems }, { collapsed: true }).addTo(map);
 
             var editControl = new L.Control.Draw({
                 draw: false,
@@ -154,22 +162,24 @@ RED.nodes.registerType('geofence', {
             $("#node-input-manager").change(function(val, pal){
                 var nodeManagerId = $("#node-input-manager option:selected").val();
                 nodeManager = RED.nodes.node(nodeManagerId);
-                if(nodeManagerId != "_ADD_"){
-                    changeNodeManager(nodeManager);
-                }
+                changeNodeManager(nodeManager);
             });
 
             initialNodeManagerID = $("#node-input-manager option:selected").val();
             var nodeManager = RED.nodes.node(initialNodeManagerID);
-            if(nodeManager != null){
-                changeNodeManager(nodeManager);
-            }
+            changeNodeManager(nodeManager);
         }
 
         function changeNodeManager(nodeM){
             
             drawnItems.clearLayers();
             nodeManager = nodeM;
+
+            if(nodeManager == null){
+                console.log("No node manager selected");
+                drawControl.remove();
+                return;
+            }
 
             var shapeList = [];
 
@@ -223,40 +233,7 @@ RED.nodes.registerType('geofence', {
             }
         }
 
-        $.getScript('geofence/js/leaflet/leaflet-src.js')
-            .done(function (data, textStatus, jqxhr) {
-                $.getScript('geofence/js/Leaflet.draw/dist/leaflet.draw.js')
-                    .done(function (data, textStatus, jqxhr) {
-                        $.getScript('geofence/js/L.GeoSearch/src/js/l.control.geosearch.js')
-                            .done(function (data, textStatus, jqxhr) {
-                                $.getScript('geofence/js/L.GeoSearch/src/js/l.geosearch.provider.openstreetmap.js')
-                                    .done(function (data, textStatus, jqxhr) {
-                                        initializeMap(node);
-
-                                    })
-                                    .fail(function (jqxhr, settings, exception) {
-                                        console.log("failed4");
-                                        console.log(exception);
-                                        console.log(exception.stack);
-                                    });
-                            })
-                            .fail(function (jqxhr, settings, exception) {
-                                console.log("failed3");
-                                console.log(exception);
-                                console.log(exception.stack);
-                            });
-                    })
-                    .fail(function (jqxhr, settings, exception) {
-                        console.log("failed2");
-                        console.log(exception);
-                        console.log(exception.stack);
-                    });
-            })
-            .fail(function (jqxhr, settings, exception) {
-                console.log("failed");
-                console.log(exception);
-                console.log(exception.stack);
-            });
+        initializeMap(node);
 
     },
     oneditsave: function () {
