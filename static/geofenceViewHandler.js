@@ -199,6 +199,9 @@ RED.nodes.registerType('geofence', {
                 fence.editing.options = fenceEditOptions;
                 fence.nodeID = nodeID;
 
+                if(RED.nodes.node(nodeID) == null){
+                    return
+                }
 
                 var myFence = nodeID == node.id;
 
