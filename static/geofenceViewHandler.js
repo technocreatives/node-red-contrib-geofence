@@ -200,6 +200,7 @@ RED.nodes.registerType('geofence', {
                 fence.nodeID = nodeID;
 
                 if(RED.nodes.node(nodeID) == null){
+                    console.log("SKipping to show non-existing node!")
                     return
                 }
 

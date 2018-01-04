@@ -98,6 +98,11 @@ module.exports = function (RED) {
             node.send(message);
         });
 
+        node.on('close', function() {
+            console.log("Deleting node " + node.id)
+            node.manager[node.id]
+        });
+
     }
 
     RED.nodes.registerType("geofence", geofenceNode);
@@ -110,4 +115,5 @@ module.exports = function (RED) {
 
         res.sendFile(req.params[0], options);
     });
+
 };
