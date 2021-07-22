@@ -79,7 +79,7 @@ module.exports = function (RED) {
 
                     points.push(nextElem);
                 }
-                var inFence = geolib.isPointInside(loc, points);
+                var inFence = geolib.isPointInPolygon(loc, points);
                 
                 var payload = {};
                 payload.name = n.name;
